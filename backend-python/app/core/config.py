@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     api_host: str = "127.0.0.1"
     api_port: int = 8000
     api_reload: bool = True
-    api_version: str = "0.1.0"
+    api_version: str = "0.1.1"
 
     ### Database URL ###
     database_url: str = "sqlite:///./stock.db"
