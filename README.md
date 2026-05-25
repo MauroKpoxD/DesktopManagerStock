@@ -31,7 +31,7 @@ desarrollado con [Python/Java] + [APIS]
 ### Herramientas
 - Git & Github
 - Maven
-- Postman (tests)
+- FastAPI /docs
 
 ## Requisitos previos
 
