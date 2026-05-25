@@ -83,28 +83,6 @@ def update_producto(producto_id: int, producto_update: ProductoUpdate, db: Sessi
     return producto
 
 # ------------------------------------------------------------------------------
-# ENDPOINT: ACTUALIZAR un producto existente (total o parcial)
-# ------------------------------------------------------------------------------
-@router.put("/productos/{producto_id}", response_model=Producto)
-def update_producto(producto_id: int, producto_update: ProductoUpdate, db: Session = Depends(get_db)):
-    """
-    actualiza los datos de un producto poder enviar solo los campos que quieras cambiar.
-    Ejemplo de petición: PUT /api/v1/productos/3
-    Cuerpo:
-    {
-        "precio": 29.99,
-        "stock": 15
-    }
-    esto cambiaria solo el precio y el stock del producto con id=3
-    si el producto no existe, devuelve 404
-    devuelve el producto actualizado
-    """
-    producto = producto_service.update_producto(db, producto_id, producto_update)
-    if not producto:
-        raise HTTPException(status_code=404, detail="Producto no encontrado")
-    return producto
-
-# ------------------------------------------------------------------------------
 # ENDPOINT: ELIMINAR un producto
 # ------------------------------------------------------------------------------
 @router.delete("/productos/{producto_id}", status_code=204) # status_code=204 significa "Sin contenido" – la operación fue exitosa pero no devolvemos nada
