@@ -3,3 +3,8 @@ uvicorn
 sqlalchemy
 pydantic
 pydantic-settings
+pydantic[email]
+pytest
+pytest-cov
+factory-boy
+httpx 
