@@ -1,3 +1,9 @@
+"""
+ÚLTIMA MODIFICACIÓN: 24/05/2025 por S4NDULOS
+PROPÓSITO: Schemas Pydantic para validación de datos de productos.
+           Incluye ProductoBase, ProductoCreate, ProductoUpdate, Producto (respuesta).
+"""
+
 from pydantic import BaseModel
 from typing import Optional
 

@@ -1,7 +1,7 @@
 """
-SERVICIO DE PRODUCTOS
-Contiene la lógica de negocio para gestionar productos en la base de datos.
-Cada función recibe una sesión de BD (db) y opcionalmente datos de entrada.
+ÚLTIMA MODIFICACIÓN: 30/5/2025 por S4NDULOS
+PROPÓSITO: Contiene las operaciones CRUD y lógica de negocio para productos.
+           Aísla el acceso a la base de datos de los controladores.
 """
 
 from sqlalchemy.orm import Session

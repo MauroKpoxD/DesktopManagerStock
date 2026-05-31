@@ -1,3 +1,9 @@
+"""
+ÚLTIMA MODIFICACIÓN: 30/5/2025 por S4NDULOS
+PROPÓSITO: Define el modelo SQLAlchemy para la tabla 'usuarios'.
+           Incluye autenticación (username, email, hashed_password) y roles.
+"""
+
 from sqlalchemy import Column, Integer, String, Boolean
 from app.core.database import Base
 

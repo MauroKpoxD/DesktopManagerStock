@@ -1,3 +1,10 @@
+"""
+ÚLTIMA MODIFICACIÓN: 30/05/2025 por S4NDULOS
+PROPÓSITO: Schemas Pydantic para usuarios y autenticación.
+           Define UsuarioBase, UsuarioCreate, UsuarioUpdate, Usuario (respuesta),
+           Token y TokenData para el flujo JWT.
+"""
+
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 

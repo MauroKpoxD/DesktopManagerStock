@@ -1,15 +1,27 @@
-# Este archivo define TODOS los endpoints que va a entender la API.
+"""
+ÚLTIMA MODIFICACIÓN: 29/5/2025 por S4NDULOS
+PROPÓSITO: Define los endpoints públicos y protegidos de la API.
+           Agrupa rutas de productos con autenticación JWT y control de roles.
+"""
 
-# Importamos las herramientas necesarias
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from app.services import producto_service          
+from sqlalchemy.orm import Session       
 from app.schemas.producto import Producto, ProductoCreate, ProductoUpdate 
 from app.core.database import get_db               
 from app.core.config import settings       
 from app.core.security import get_current_active_user 
 from app.models.usuario import UsuarioDB                
-from typing import Optional      
+from typing import Optional     
+
+from app.services.producto_service import (
+    get_all_productos,
+    get_producto_by_id,
+    create_producto as service_create_producto,
+    update_producto as service_update_producto,
+    delete_producto as service_delete_producto,
+    ajustar_stock as service_ajustar_stock,
+    get_productos_stock_bajo
+)
 
 """
 ULTIMA MODIFICACION: 24/5/2026
@@ -43,7 +55,7 @@ def get_productos(
     Obtiene todos los productos.
     Requiere estar autenticado (cualquier rol).
     """
-    return producto_service.get_all_productos(db)
+    return get_all_productos(db)
 
 # ------------------------------------------------------------------------------
 # ENDPOINT: OBTENER un producto por ID (requiere autenticación)
@@ -58,7 +70,7 @@ def get_producto(
     Busca un producto por ID.
     Requiere autenticación.
     """
-    producto = producto_service.get_producto_by_id(db, producto_id)
+    producto = get_producto_by_id(db, producto_id)
     if not producto:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -85,7 +97,7 @@ def create_producto(
             detail="No tienes permiso para crear productos"
         )
     try:
-        return producto_service.create_producto(db, producto)
+        return service_create_producto(db, producto)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -108,7 +120,7 @@ def update_producto(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No tienes permiso para modificar productos"
         )
-    producto = producto_service.update_producto(db, producto_id, producto_update)
+    producto = service_update_producto(db, producto_id, producto_update)
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return producto
@@ -131,7 +143,7 @@ def delete_producto(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Solo administradores pueden eliminar productos"
         )
-    if not producto_service.delete_producto(db, producto_id):
+    if not service_delete_producto(db, producto_id):
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     # No hay return (código 204)
 
@@ -157,7 +169,7 @@ def ajustar_stock(
         )
     es_entrada = tipo.lower() == "entrada"
     try:
-        producto = producto_service.ajustar_stock(db, producto_id, cantidad, es_entrada)
+        producto = service_ajustar_stock(db, producto_id, cantidad, es_entrada)
         return {"mensaje": f"Stock actualizado. Nuevo stock: {producto.stock}"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -177,5 +189,4 @@ def get_productos_stock_bajo(
     - Si no → stock <= stock_minimo de cada producto.
     Requiere autenticación.
     """
-    productos = producto_service.get_productos_stock_bajo(db, umbral)
-    return productos
+    return get_productos_stock_bajo(db, umbral)

@@ -1,3 +1,9 @@
+"""
+ÚLTIMA MODIFICACIÓN: 30/5/2025 por S4NDULOS
+PROPÓSITO: Endpoints de autenticación: registro de usuarios y login con JWT.
+           Maneja creación de usuarios y generación de tokens de acceso.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session

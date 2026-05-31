@@ -1,10 +1,8 @@
 """
-PUNTO DE ENTRADA PRINCIPAL DE LA API
-Este archivo se ejecuta para levantar el servidor FastAPI.
-Configura la base de datos, importa las rutas y arranca el servidor.
+ÚLTIMA MODIFICACIÓN: 25/5/2025 por S4NDULOS
+PROPÓSITO: Punto de entrada de la API. Crea la app FastAPI,
+           inicializa la base de datos (tablas y seeder), e incluye los routers.
 """
-
-
 
 from fastapi import FastAPI
 from app.api.routes import router

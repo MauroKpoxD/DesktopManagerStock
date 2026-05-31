@@ -1,5 +1,8 @@
 """
-Configuracion de la base de datos y funciones de inicializacion (Seeders)
+ÚLTIMA MODIFICACIÓN: 28/5/2025 por S4NDULOS
+PROPÓSITO: Configura la conexión a la base de datos (SQLite por defecto),
+           crea el motor, las sesiones, y provee la dependencia get_db.
+           También incluye un seeder inicial (init_db) con datos por defecto.
 """
 
 from sqlalchemy import create_engine
@@ -42,28 +45,19 @@ def get_db():
 # -------------------------------------------------------------------
 
 def init_db():
-    """
-    Crea las tablas dsi no existen e inserta datos por defecto
-    - Usuario administrador (atlas/software_2026_123)
-    - Productos de ejemplo
-    Solo se ejecuta una vez al iniciar la app
-    """
-
-    # importacion de usuarios, producto y hash para evitar circular imports
     from app.models.usuario import UsuarioDB
-    from app.models.producto import ProductoDB
     from app.core.security import get_password_hash
-
-    # CREAR TABLAS SI NO EXISTEN
     Base.metadata.create_all(bind=engine)
-    
-    # CREAR SESION
     db = SessionLocal()
-
-    """
-    al proximo desarrollador porfavor seguir con la creacion de datos
-    """
-
-    # guardar y cerrar
-    db.commit()
+    admin = db.query(UsuarioDB).filter(UsuarioDB.username == "admin").first()
+    if not admin:
+        admin_user = UsuarioDB(
+            username="admin",
+            email="admin@stock.com",
+            hashed_password=get_password_hash("admin123"),
+            rol="admin",
+            activo=True
+        )
+        db.add(admin_user)
+        db.commit()
     db.close()

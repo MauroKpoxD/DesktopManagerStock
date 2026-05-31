@@ -1,14 +1,13 @@
 """
-SEGURIDAD: Hashing de contraseñas y autenticación con JWT
-Este archivo contiene las herramientas para:
-- Encriptar y verificar contraseñas (bcrypt)
-- Crear y validar tokens JWT
-- Obtener el usuario actual a partir del token
+ÚLTIMA MODIFICACIÓN: 28/5/2025 por S4NDULOS
+PROPÓSITO: Funciones de hashing (bcrypt), generación/validación de JWT,
+           y dependencias para obtener usuario autenticado.
 """
 
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from app.core.database import get_db
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -20,8 +19,8 @@ from app.schemas.usuario import TokenData
 # HASHING DE CONTRASEÑAS
 # -------------------------------------------------------------------
 
-# Configuración del algoritmo de encriptación (bcrypt)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Configuración del algoritmo de encriptación
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 def verify_password(plain_password, hashed_password):
     """Verifica si una contraseña en texto plano coincide con su hash"""
@@ -63,7 +62,7 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
     return encoded_jwt
 
-def get_current_user(db: Session = Depends(), token: str = Depends(oauth2_scheme)):
+def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     """
     Obtiene el usuario actual a partir del token JWT enviado en el header
     - Verifica que el token sea válido y no haya expirado
