@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="assets/cartel_logotipo.png" width="500">
+  <img src="assets/cartel_logotipo.png" width="1000">
 </h1>
 
 <p align="center">
