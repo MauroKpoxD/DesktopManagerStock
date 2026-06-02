@@ -1,7 +1,7 @@
 """
-ÚLTIMA MODIFICACIÓN: 30/5/2025 por S4NDULOS
-PROPÓSITO: Define el modelo SQLAlchemy para la tabla 'productos'.
-           Incluye campos: id, nombre, precio, stock, stock_minimo, stock_maximo.
+ÚLTIMA MODIFICACIÓN: 30/05/2025 por S4NDULOS
+PROPÓSITO: Modelo SQLAlchemy para la tabla 'productos'.
+           Define campos: id, nombre, precio, stock, stock_minimo, stock_maximo.
 """
 
 from sqlalchemy import Column, Integer, String, Float
