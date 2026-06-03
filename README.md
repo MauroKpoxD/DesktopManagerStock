@@ -4,7 +4,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11-blue">
-  <img src="https://img.shields.io/badge/Java-17-red">
+  <img src="https://img.shields.io/badge/.NET-10-purple">
   <img src="https://img.shields.io/badge/FastAPI-0.100-green">
   <img src="https://img.shields.io/badge/license-APACHE2.0-lightgrey">
   <img src="https://img.shields.io/badge/version-0.1.1-blue">
@@ -17,7 +17,7 @@
 
 <p align="center">
   <b>Sistema de gestión de inventario y stock para escritorio</b><br>
-  desarrollado con <b>Python/Java</b> + <b>API REST</b>.
+  desarrollado con <b>Python</b> (backend API) + <b>.NET 10</b> (frontend Windows Forms).
 </p>
 
 <hr>
@@ -85,24 +85,23 @@
       </ul>
     </td>
     <td valign="top" width="33%">
-      <h3>☕ Frontend (Java)</h3>
+      <h3>🖥️ Frontend (.NET 10)</h3>
       <ul>
-        <li>Java 17+</li>
-        <li>Swing</li>
-        <li>HttpClient</li>
-        <li>API Consumible</li>
+        <li>.NET 10</li>
+        <li>Windows Forms</li>
+        <li>HttpClient (consumo de API)</li>
       </ul>
     </td>
     <td valign="top" width="33%">
       <h3>🔧 Herramientas</h3>
       <ul>
         <li>Git & GitHub</li>
-        <li>Maven</li>
+        <li>Visual Studio 2022</li>
         <li>FastAPI /docs</li>
         <li>Docker (opcional)</li>
       </ul>
     </td>
-   </tr>
+  </tr>
 </table>
 
 <hr>
@@ -112,10 +111,9 @@
 
 <ul>
   <li>Python 3.11+</li>
-  <li>Java JDK 17+</li>
-  <li>Maven 3.8+</li>
+  <li>.NET 10 SDK (para compilar el frontend)</li>
   <li>SQLite3</li>
-  <li>Git (opcional para el git clone o sino descargar el .zip desde el repositorio)</li>
+  <li>Git (opcional)</li>
 </ul>
 
 <h2>📥 Instalación y configuración</h2>
@@ -129,69 +127,52 @@ cd DesktopManagerStock</code>
 
 <h3>Backend (API)</h3>
 <pre>
-<code>cd backend
+<code>cd backend-python
 pip install -r requirements.txt
 uvicorn main:app --reload
 # La API corre en http://localhost:8000
-# Documentación: http://localhost:8000/docs</code>
-# Proximamente se dejará un dockerfile / exe
+# Documentación interactiva: http://localhost:8000/docs</code>
 </pre>
 
-<h3>Frontend (Cliente)</h3>
+<h3>Frontend (Cliente .NET Windows Forms)</h3>
 <pre>
-<code>cd frontend
-mvn clean install
-java -jar target/desktop-stock.jar</code>
-# En releases se adjuntará un .exe generico para no compilar a mano proximamente
+<code>cd frontend-dotnet
+dotnet build
+dotnet run --project DesktopStock.csproj</code>
+# O abre la solución en Visual Studio 2022 y ejecuta.
 </pre>
 
 <h2>⚙️ Configuración</h2>
 
-<p>Crea un archivo <code>.env</code> en la raíz del backend:</p>
+<p>Crea un archivo <code>.env</code> en la carpeta <code>backend-python/</code>:</p>
 
 <pre>
 <code>DATABASE_URL=sqlite:///./stock.db
+DB_ECHO=False
 API_HOST=127.0.0.1
 API_PORT=8000
 API_RELOAD=true
 API_VERSION=1.0.0
 SECRET_KEY=token123
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
 STOCK_ALERT_THRESHOLD=3</code>
 </pre>
 
-<h2>📡 Endpoints principales</h2>
+<h2>📡 Documentación de la API</h2>
 
-<table border="1" cellpadding="8" cellspacing="0">
-  <thead>
-    <tr>
-      <th>Método</th>
-      <th>Endpoint</th>
-      <th>Descripción</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><b>GET</b></td>
-      <td>/productos</td>
-      <td>Listar todos</td>
-    </tr>
-    <tr>
-      <td><b>POST</b></td>
-      <td>/productos</td>
-      <td>Crear nuevo</td>
-    </tr>
-    <tr>
-      <td><b>PUT</b></td>
-      <td>/productos/{id}</td>
-      <td>Actualizar stock</td>
-    </tr>
-    <tr>
-      <td><b>DELETE</b></td>
-      <td>/productos/{id}</td>
-      <td>Eliminar</td>
-    </tr>
-  </tbody>
-</table>
+<p>La documentación completa de la API REST (endpoints, autenticación, esquemas, ejemplos) se encuentra en el archivo:</p>
+
+<p align="center">
+  <a href="docs/API_DOCS.md"><strong>📘 docs/API_DOCS.md</strong></a>
+</p>
+
+<p>Además, una vez que el backend esté corriendo, puedes explorar la documentación interactiva generada automáticamente por FastAPI:</p>
+
+<ul>
+  <li><strong>Swagger UI</strong>: <a href="http://localhost:8000/docs">http://localhost:8000/docs</a></li>
+  <li><strong>ReDoc</strong>: <a href="http://localhost:8000/redoc">http://localhost:8000/redoc</a></li>
+</ul>
 
 <hr>
 
