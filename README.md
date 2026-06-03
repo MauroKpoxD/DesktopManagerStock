@@ -37,30 +37,35 @@
   <li>✅ Gestión de productos (alta, baja, modificación)</li>
   <li>✅ Control de stock mínimo y máximo</li>
   <li>✅ Alertas de stock bajo</li>
-  <li>✅ Autenticación segura de usuario</li>
+  <li>✅ Autenticación segura con JWT y roles (admin, editor, lector)</li>
+  <li>✅ Validaciones de seguridad: registro forzado a rol "lector", cantidad positiva, respeto de stock máximo</li>
+  <li>✅ Paginación en listado de productos</li>
+  <li>✅ Índices en base de datos para consultas rápidas</li>
+  <li>✅ Documentación interactiva automática en /docs</li>
 </ul>
 
-<!-- Próximas características -->
+<!-- Próximas características (en desarrollo) -->
 <h2>⏳ Próximas características (en desarrollo)</h2>
 
 <ul>
-  <li>⏳ Entradas y salidas de inventario</li>
-  <li>⏳ Reportes en PDF/Excel</li>
-  <li>⏳ Cálculo de ganancias/pérdidas</li>
-  <li>⏳ Impresión de etiquetas y comprobantes</li>
-  <li>⏳ Mejora de interfaz visual</li>
+  <li>⏳ Historial de movimientos de stock (auditoría de entradas/salidas)</li>
+  <li>⏳ Reportes en PDF y Excel (productos, stock bajo, movimientos)</li>
+  <li>⏳ Refresh tokens para sesiones más largas sin re-login</li>
+  <li>⏳ Rate limiting en login para prevenir fuerza bruta</li>
+  <li>⏳ Logging estructurado de acciones importantes</li>
+  <li>⏳ Validación de contraseña fuerte en registro</li>
 </ul>
 
-<!-- Futuras características -->
-<h2>🔮 Futuras características</h2>
+<!-- Futuras características (planeadas) -->
+<h2>🔮 Futuras características (planeadas)</h2>
 
 <ul>
   <li>📦 Módulo de proveedores</li>
-  <li>📦 Códigos de barras</li>
-  <li>📦 Backup automático</li>
-  <li>📦 Modo claro/oscuro</li>
-  <li>📦 Facturación electrónica</li>
-  <li>📦 Múltiples sucursales</li>
+  <li>📦 Códigos de barras y búsqueda por código</li>
+  <li>📦 Backup automático de base de datos</li>
+  <li>📦 Modo claro/oscuro en frontend</li>
+  <li>📦 Facturación electrónica básica</li>
+  <li>📦 Soporte para múltiples sucursales</li>
 </ul>
 
 <hr>
