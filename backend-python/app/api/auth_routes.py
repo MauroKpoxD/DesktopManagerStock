@@ -1,7 +1,7 @@
 """
 ÚLTIMA MODIFICACIÓN: 30/5/2025 por S4NDULOS
-PROPÓSITO: Endpoints de autenticación: registro de usuarios y login con JWT.
-           Maneja creación de usuarios y generación de tokens de acceso.
+PROPÓSITO: Endpoints de autenticación: registro de usuarios y login con JWT
+           Maneja creación de usuarios y generación de tokens de acceso
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -13,6 +13,7 @@ from app.core.security import authenticate_user, create_access_token, get_passwo
 from app.schemas.usuario import UsuarioCreate, Usuario, Token
 from app.models.usuario import UsuarioDB
 from app.core.config import settings
+from app.core.roles import Rol
 
 router = APIRouter(prefix="/api/v1/auth", tags=["autenticación"])
 
@@ -29,7 +30,8 @@ def register(usuario: UsuarioCreate, db: Session = Depends(get_db)):
         username=usuario.username,
         email=usuario.email,
         hashed_password=hashed,
-        rol=usuario.rol
+        rol=Rol.LECTOR.value,
+        activo=True
     )
     db.add(db_usuario)
     db.commit()
