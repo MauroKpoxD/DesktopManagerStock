@@ -1,7 +1,7 @@
 """
 ÚLTIMA MODIFICACIÓN: 29/5/2025 por S4NDULOS
-PROPÓSITO: Define los endpoints públicos y protegidos de la API.
-           Agrupa rutas de productos con autenticación JWT y control de roles.
+PROPÓSITO: Define los endpoints públicos y protegidos de la API
+           Agrupa rutas de productos con autenticación JWT y control de roles
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -22,12 +22,6 @@ from app.services.producto_service import (
     ajustar_stock as service_ajustar_stock,
     get_productos_stock_bajo
 )
-
-"""
-ULTIMA MODIFICACION: 24/5/2026
-POR: S4NDULOS
-HIZO: AUTENTIFICACION DE JWT Y DOCUMENTACION DE PUBLICOS Y AUTENTICADOS
-"""
 
 # establezco route con /api/v1
 router = APIRouter(prefix="/api/v1", tags=["productos"]) 

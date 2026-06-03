@@ -1,11 +1,11 @@
 """
 ÚLTIMA MODIFICACIÓN: 30/5/2025 por S4NDULOS
-PROPÓSITO: Carga variables de entorno y expone la configuración global.
-           Incluye rutas de directorios, datos de autenticación y umbrales de stock.
+PROPÓSITO: Carga variables de entorno y expone la configuración global
+           Incluye rutas de directorios, datos de autenticación y umbrales de stock
 """
 
 from pydantic_settings import BaseSettings
-from pydantic import model_validator
+from pydantic import ConfigDict, model_validator
 from pathlib import Path
 
 class Settings(BaseSettings):
@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     # ---------- Base de datos ----------
     database_url: str = "sqlite:///./stock.db"
+    db_echo: bool = False
 
     # ---------- Seguridad ----------
     secret_key: str   
@@ -60,9 +61,11 @@ class Settings(BaseSettings):
         self.logs_dir.mkdir(exist_ok=True)
         return self
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    # Configuración de pydatic
+    model_config = ConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False
+    )
 
 settings = Settings()

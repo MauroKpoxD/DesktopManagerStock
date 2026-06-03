@@ -1,10 +1,10 @@
 """
 ÚLTIMA MODIFICACIÓN: 24/05/2025 por S4NDULOS
-PROPÓSITO: Schemas Pydantic para validación de datos de productos.
-           Incluye ProductoBase, ProductoCreate, ProductoUpdate, Producto (respuesta).
+PROPÓSITO: Schemas Pydantic para validación de datos de productos
+           Incluye ProductoBase, ProductoCreate, ProductoUpdate, Producto (respuesta)
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 
 class ProductoBase(BaseModel):
@@ -27,5 +27,4 @@ class ProductoUpdate(BaseModel):
 class Producto(ProductoBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True) 

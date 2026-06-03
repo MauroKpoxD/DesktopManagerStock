@@ -1,20 +1,19 @@
 """
 ÚLTIMA MODIFICACIÓN: 28/5/2025 por S4NDULOS
 PROPÓSITO: Configura la conexión a la base de datos (SQLite por defecto),
-           crea el motor, las sesiones, y provee la dependencia get_db.
-           También incluye un seeder inicial (init_db) con datos por defecto.
+           crea el motor, las sesiones, y provee la dependencia get_db
+           También incluye un seeder inicial (init_db) con datos por defecto
 """
 
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker   # ← importación corregida
 from app.core.config import settings
 
 # -------------------------------------------------------------------
 # Configuracion del motor segun el tipo de DB 
 # -------------------------------------------------------------------
 
-SQLALCHEMY_DATABASE_URL = settings.database_url # usar la URL de los .env
+SQLALCHEMY_DATABASE_URL = settings.database_url
 
 connect_args = {}
 if "sqlite" in SQLALCHEMY_DATABASE_URL:
@@ -23,17 +22,16 @@ if "sqlite" in SQLALCHEMY_DATABASE_URL:
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     connect_args=connect_args,
-    echo=getattr(settings, "db_echo", False), # VARIABLE EN .ENV
-    pool_size=5,                             # solo para otras base de datos como mysqlazo
+    echo=settings.db_echo,   # ← ahora sí existe en settings
+    pool_size=5,
     max_overflow=10,
     pool_pre_ping=True
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine) 
-Base = declarative_base()
+Base = declarative_base()   # ← nueva forma (ya no desde sqlalchemy.ext.declarative)
 
 def get_db():
-    """Dependencias para obtener sesion de BD (se cierra automaticamente)"""
     db = SessionLocal()
     try:
         yield db

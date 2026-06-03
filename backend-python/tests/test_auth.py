@@ -1,7 +1,7 @@
 """
 ÚLTIMA MODIFICACIÓN: 30/05/2025 por S4NDULOS
 PROPÓSITO: Prueba el flujo completo de autenticación:
-           registro de usuario, login, obtención de token y acceso a endpoint protegido.
+           registro de usuario, login, obtención de token y acceso a endpoint protegido
 """
 
 import pytest

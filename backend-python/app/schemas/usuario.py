@@ -5,7 +5,7 @@ PROPÓSITO: Schemas Pydantic para usuarios y autenticación.
            Token y TokenData para el flujo JWT.
 """
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
 from typing import Optional
 
 class UsuarioBase(BaseModel):
@@ -25,8 +25,7 @@ class Usuario(UsuarioBase):
     id: int
     activo: bool
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class Token(BaseModel):
     access_token: str

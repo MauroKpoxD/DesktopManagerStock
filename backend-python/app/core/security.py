@@ -1,10 +1,10 @@
 """
 ÚLTIMA MODIFICACIÓN: 28/5/2025 por S4NDULOS
 PROPÓSITO: Funciones de hashing (bcrypt), generación/validación de JWT,
-           y dependencias para obtener usuario autenticado.
+           y dependencias para obtener usuario autenticado
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone   
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from app.core.database import get_db
@@ -19,65 +19,45 @@ from app.schemas.usuario import TokenData
 # HASHING DE CONTRASEÑAS
 # -------------------------------------------------------------------
 
-# Configuración del algoritmo de encriptación
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 def verify_password(plain_password, hashed_password):
-    """Verifica si una contraseña en texto plano coincide con su hash"""
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
-    """Genera un hash seguro a partir de una contraseña en texto plano"""
     return pwd_context.hash(password)
 
 # -------------------------------------------------------------------
 # AUTENTICACIÓN Y TOKENS JWT
 # -------------------------------------------------------------------
 
-# Configuración del esquema OAuth2: indica a FastAPI que el token se obtiene en /api/v1/auth/login
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 def authenticate_user(db: Session, username: str, password: str):
-    """
-    Busca un usuario por nombre de usuario y verifica su contraseña
-    Retorna el usuario si es correcto, o False si falla
-    """
     usuario = db.query(UsuarioDB).filter(UsuarioDB.username == username).first()
     if not usuario or not verify_password(password, usuario.hashed_password):
         return False
     return usuario
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
-    """
-    Crea un token JWT con fecha de expiración.
-    - data: diccionario con la información a incluir (ej: {"sub": "username"})
-    - expires_delta: tiempo de vida opcional (si no se da, usa el valor de settings)
-    """
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta   
     else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)  
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
     return encoded_jwt
 
 def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    """
-    Obtiene el usuario actual a partir del token JWT enviado en el header
-    - Verifica que el token sea válido y no haya expirado
-    - Busca el usuario en la base de datos
-    - Si algo falla, lanza error 401 (No autorizado)
-    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="No se pudieron validar las credenciales",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        # Decodificar el token usando la clave secreta
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
-        username: str = payload.get("sub")  # "sub" es el nombre de usuario
+        username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
         token_data = TokenData(username=username)
@@ -90,11 +70,6 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_
     return usuario
 
 def get_current_active_user(current_user: UsuarioDB = Depends(get_current_user)):
-    """
-    Dependencia que se usa en los endpoints protegidos
-    - Toma el usuario actual (de get_current_user) y verifica que esté activo
-    - Si está inactivo, lanza error 400
-    """
     if not current_user.activo:
         raise HTTPException(status_code=400, detail="Usuario inactivo")
     return current_user
