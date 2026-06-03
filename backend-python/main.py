@@ -1,40 +1,46 @@
 """
-ÚLTIMA MODIFICACIÓN: 25/5/2025 por S4NDULOS
+ÚLTIMA MODIFICACIÓN: 3/6/2025 por S4NDULOS
 PROPÓSITO: Punto de entrada de la API. Crea la app FastAPI,
-           inicializa la base de datos (tablas y seeder), e incluye los routers.
+           inicializa la base de datos (tablas y seeder) mediante lifespan,
+           e incluye los routers.
 """
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.api.routes import router
-from app.api.auth_routes import router as auth_router  
-from app.core.database import engine, Base
+from app.api.auth_routes import router as auth_router
+from app.core.database import engine, Base, init_db
 from app.core.config import settings
 
-# Importar los modelos para que SQLAlchemy los detecte y cree las tablas
-from app.models.producto import ProductoDB     
-from app.models.usuario import UsuarioDB      
+# Importar los modelos para que SQLAlchemy los detecte
+from app.models.producto import ProductoDB
+from app.models.usuario import UsuarioDB
 
-# Crear tablas en la base de datos (incluye productos y usuarios)
-# Si no existen, las crea; si ya existen, no las modifica.
-Base.metadata.create_all(bind=engine)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: crear tablas y ejecutar seeder
+    Base.metadata.create_all(bind=engine)
+    init_db()
+    yield
+    # Shutdown: aquí se pueden cerrar recursos si es necesario
+    # (por ejemplo, engine.dispose() si se usa conexión asíncrona para mas adelante...)
 
-# Instancia de FastAPI (configuración básica)
 app = FastAPI(
-    title="DesktopManagerStock API",                     # titulo que se ve en /docs
-    version=settings.api_version,                        # versión desde .env
-    description="Sistema de gestión de inventario y stock"
+    title="DesktopManagerStock API",
+    version=settings.api_version,
+    description="Sistema de gestión de inventario y stock",
+    lifespan=lifespan
 )
 
-# Incluir los routers (grupos de endpoints)
-app.include_router(router)          # endpoints de productos (/api/v1/productos)
-app.include_router(auth_router)     # endpoints de autenticación (/api/v1/auth/...)
+# Incluir routers
+app.include_router(router)
+app.include_router(auth_router)
 
-# Punto de inicio cuando se ejecuta este script directamente
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
-        "main:app",                  # archivo:variable_app
-        host=settings.api_host,      # dirección IP (del .env)
-        port=settings.api_port,      # puerto (del .env)
-        reload=settings.api_reload   # modo recarga automática (True/False)
+        "main:app",
+        host=settings.api_host,
+        port=settings.api_port,
+        reload=settings.api_reload
     )

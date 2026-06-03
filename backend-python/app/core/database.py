@@ -6,7 +6,7 @@ PROPÓSITO: Configura la conexión a la base de datos (SQLite por defecto),
 """
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker   # ← importación corregida
+from sqlalchemy.orm import declarative_base, sessionmaker   
 from app.core.config import settings
 
 # -------------------------------------------------------------------
@@ -22,14 +22,14 @@ if "sqlite" in SQLALCHEMY_DATABASE_URL:
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     connect_args=connect_args,
-    echo=settings.db_echo,   # ← ahora sí existe en settings
+    echo=settings.db_echo,  
     pool_size=5,
     max_overflow=10,
     pool_pre_ping=True
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine) 
-Base = declarative_base()   # ← nueva forma (ya no desde sqlalchemy.ext.declarative)
+Base = declarative_base()   
 
 def get_db():
     db = SessionLocal()
@@ -45,17 +45,25 @@ def get_db():
 def init_db():
     from app.models.usuario import UsuarioDB
     from app.core.security import get_password_hash
+    from app.core.roles import Rol
+    import logging
+    
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     admin = db.query(UsuarioDB).filter(UsuarioDB.username == "admin").first()
     if not admin:
+        default_password = "admin123"
         admin_user = UsuarioDB(
             username="admin",
             email="admin@stock.com",
-            hashed_password=get_password_hash("admin123"),
-            rol="admin",
+            hashed_password=get_password_hash(default_password),
+            rol=Rol.ADMIN.value,
             activo=True
         )
         db.add(admin_user)
         db.commit()
+        logging.warning(
+            f"Usuario 'admin' creado con contraseña por defecto: '{default_password}'. "
+            "CÁMBIELA INMEDIATAMENTE después del primer inicio de sesión."
+        )
     db.close()
