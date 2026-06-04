@@ -48,7 +48,6 @@ def init_db():
     from app.core.roles import Rol
     import logging
     
-    Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     admin = db.query(UsuarioDB).filter(UsuarioDB.username == "admin").first()
     if not admin:

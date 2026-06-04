@@ -1,18 +1,22 @@
 """
-ÚLTIMA MODIFICACIÓN: 3/6/2025 por S4NDULOS
-PROPÓSITO: Contiene las operaciones CRUD y lógica de negocio para productos.
+ÚLTIMA MODIFICACIÓN: 4/6/2025 por S4NDULOS
+PROPÓSITO: Contiene las operaciones CRUD y lógica de negocio para productos
            MEJORAS: respeta stock_maximo, evita duplicados en update,
-           validaciones de rangos y valores positivos.
+           validaciones de rangos y valores positivos
+           NUEVO: Registro automático de movimientos al ajustar stock
 """
 
 from sqlalchemy.orm import Session
 from app.models.producto import ProductoDB
 from app.schemas.producto import ProductoCreate, ProductoUpdate
+from app.services.movimiento_service import registrar_movimiento
+from app.schemas.movimiento import MovimientoBase
 
 
 # ------------------------------------------------------------
 def get_all_productos(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(ProductoDB).offset(skip).limit(limit).all()
+    return db.query(ProductoDB).order_by(ProductoDB.id).offset(skip).limit(limit).all()
+
 
 # ------------------------------------------------------------
 def get_producto_by_id(db: Session, producto_id: int):
@@ -30,6 +34,8 @@ def create_producto(db: Session, producto: ProductoCreate):
         raise ValueError("El stock mínimo no puede ser negativo")
     if producto.stock_maximo < producto.stock_minimo:
         raise ValueError("El stock máximo debe ser mayor o igual al mínimo")
+    if producto.stock > producto.stock_maximo:
+        raise ValueError(f"El stock inicial no puede superar el máximo de {producto.stock_maximo}")
     # Unicidad
     existente = db.query(ProductoDB).filter(ProductoDB.nombre == producto.nombre).first()
     if existente:
@@ -62,6 +68,10 @@ def update_producto(db: Session, producto_id: int, producto_update: ProductoUpda
     for key, value in producto_update.model_dump(exclude_unset=True).items():
         setattr(db_producto, key, value)
     
+    # Verificar que el stock actual no supere el máximo (si se actualizó el máximo)
+    if producto_update.stock_maximo is not None and db_producto.stock > db_producto.stock_maximo:
+        raise ValueError(f"El stock actual ({db_producto.stock}) supera el nuevo máximo ({db_producto.stock_maximo})")
+    
     db.commit()
     db.refresh(db_producto)
     return db_producto
@@ -78,7 +88,24 @@ def delete_producto(db: Session, producto_id: int):
 
 
 # ------------------------------------------------------------
-def ajustar_stock(db: Session, producto_id: int, cantidad: int, es_entrada: bool = True):
+def ajustar_stock(db: Session, producto_id: int, cantidad: int, es_entrada: bool, usuario_id: int):
+    """
+    Ajusta el stock de un producto (entrada o salida) y registra el movimiento.
+    
+    Args:
+        db: Sesión de base de datos.
+        producto_id: ID del producto.
+        cantidad: Cantidad a sumar o restar (positiva).
+        es_entrada: True para entrada (aumenta stock), False para salida (disminuye).
+        usuario_id: ID del usuario que realiza la operación (para auditoría).
+    
+    Returns:
+        ProductoDB: El producto actualizado.
+    
+    Raises:
+        ValueError: Si cantidad <= 0, producto no existe, stock insuficiente,
+                    o se supera el stock máximo.
+    """
     if cantidad <= 0:
         raise ValueError("La cantidad debe ser positiva")
     
@@ -91,13 +118,26 @@ def ajustar_stock(db: Session, producto_id: int, cantidad: int, es_entrada: bool
         if nuevo_stock > producto.stock_maximo:
             raise ValueError(f"El stock no puede superar el máximo de {producto.stock_maximo}")
         producto.stock = nuevo_stock
+        tipo = "entrada"
     else:
         if producto.stock - cantidad < 0:
             raise ValueError("Stock insuficiente")
         producto.stock -= cantidad
+        tipo = "salida"
     
     db.commit()
     db.refresh(producto)
+
+    # Registrar movimiento en el historial
+    movimiento_data = MovimientoBase(
+        producto_id=producto_id,
+        tipo=tipo,
+        cantidad=cantidad,
+        stock_resultante=producto.stock,
+        usuario_id=usuario_id
+    )
+    registrar_movimiento(db, movimiento_data)
+
     return producto
 
 
@@ -107,4 +147,3 @@ def get_productos_stock_bajo(db: Session, umbral: int = None):
         return db.query(ProductoDB).filter(ProductoDB.stock <= umbral).all()
     else:
         return db.query(ProductoDB).filter(ProductoDB.stock <= ProductoDB.stock_minimo).all()
-    

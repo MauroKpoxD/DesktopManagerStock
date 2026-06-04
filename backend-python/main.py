@@ -11,6 +11,7 @@ from app.api.routes import router
 from app.api.auth_routes import router as auth_router
 from app.core.database import engine, Base, init_db
 from app.core.config import settings
+from app.models.movimiento import MovimientoDB
 
 # Importar los modelos para que SQLAlchemy los detecte
 from app.models.producto import ProductoDB
