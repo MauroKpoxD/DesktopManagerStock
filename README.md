@@ -42,30 +42,18 @@
   <li>✅ Paginación en listado de productos</li>
   <li>✅ Índices en base de datos para consultas rápidas</li>
   <li>✅ Documentación interactiva automática en /docs</li>
+  <li>✅ <strong>Historial de movimientos de stock</strong> (auditoría de entradas/salidas)</li>
 </ul>
 
 <!-- Próximas características (en desarrollo) -->
 <h2>⏳ Próximas características (en desarrollo)</h2>
 
 <ul>
-  <li>⏳ Historial de movimientos de stock (auditoría de entradas/salidas)</li>
   <li>⏳ Reportes en PDF y Excel (productos, stock bajo, movimientos)</li>
   <li>⏳ Refresh tokens para sesiones más largas sin re-login</li>
   <li>⏳ Rate limiting en login para prevenir fuerza bruta</li>
   <li>⏳ Logging estructurado de acciones importantes</li>
   <li>⏳ Validación de contraseña fuerte en registro</li>
-</ul>
-
-<!-- Futuras características (planeadas) -->
-<h2>🔮 Futuras características (planeadas)</h2>
-
-<ul>
-  <li>📦 Módulo de proveedores</li>
-  <li>📦 Códigos de barras y búsqueda por código</li>
-  <li>📦 Backup automático de base de datos</li>
-  <li>📦 Modo claro/oscuro en frontend</li>
-  <li>📦 Facturación electrónica básica</li>
-  <li>📦 Soporte para múltiples sucursales</li>
 </ul>
 
 <hr>

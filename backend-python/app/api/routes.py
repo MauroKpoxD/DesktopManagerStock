@@ -1,14 +1,17 @@
 """
 ÚLTIMA MODIFICACIÓN: 3/6/2025 por S4NDULOS
 PROPÓSITO: Define los endpoints públicos y protegidos de la API
-           Agrupa rutas de productos con autenticación JWT y control de roles.
-           MEJORAS: paginación, validación de cantidad>0, uso de require_roles.
+           Agrupa rutas de productos con autenticación JWT y control de roles
+           MEJORAS: paginación, validación de cantidad>0, uso de require_roles
+           NUEVO: Endpoints para consultar movimientos de stock (historial)
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import Optional
+
 from app.schemas.producto import Producto, ProductoCreate, ProductoUpdate
+from app.schemas.movimiento import Movimiento
 from app.core.database import get_db
 from app.core.config import settings
 from app.core.security import get_current_active_user
@@ -23,28 +26,14 @@ from app.services.producto_service import (
     ajustar_stock as service_ajustar_stock,
     get_productos_stock_bajo
 )
-
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session       
-from app.schemas.producto import Producto, ProductoCreate, ProductoUpdate 
-from app.core.database import get_db               
-from app.core.config import settings       
-from app.core.security import get_current_active_user 
-from app.models.usuario import UsuarioDB                
-from typing import Optional     
-
-from app.services.producto_service import (
-    get_all_productos,
-    get_producto_by_id,
-    create_producto as service_create_producto,
-    update_producto as service_update_producto,
-    delete_producto as service_delete_producto,
-    ajustar_stock as service_ajustar_stock,
-    get_productos_stock_bajo
+from app.services.movimiento_service import (
+    get_movimiento_by_id,
+    get_movimientos,
+    get_movimientos_por_rango_ids
 )
 
 # establezco route con /api/v1
-router = APIRouter(prefix="/api/v1", tags=["productos"]) 
+router = APIRouter(prefix="/api/v1", tags=["productos"])
 
 # ------------------------------------------------------------------------------
 # ENDPOINT: HOME (raíz) - PÚBLICO
@@ -112,17 +101,12 @@ def update_producto(
     producto_id: int,
     producto_update: ProductoUpdate,
     db: Session = Depends(get_db),
-    current_user: UsuarioDB = Depends(get_current_active_user)
+    current_user: UsuarioDB = Depends(require_roles([Rol.ADMIN, Rol.EDITOR]))
 ):
     """
     Actualiza un producto (parcial o total).
     Requiere rol: admin o editor.
     """
-    if current_user.rol not in ["admin", "editor"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No tienes permiso para modificar productos"
-        )
     producto = service_update_producto(db, producto_id, producto_update)
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
@@ -135,17 +119,12 @@ def update_producto(
 def delete_producto(
     producto_id: int,
     db: Session = Depends(get_db),
-    current_user: UsuarioDB = Depends(get_current_active_user)
+    current_user: UsuarioDB = Depends(require_roles([Rol.ADMIN]))
 ):
     """
     Elimina un producto.
     Requiere rol: admin.
     """
-    if current_user.rol != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Solo administradores pueden eliminar productos"
-        )
     if not service_delete_producto(db, producto_id):
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     # No hay return (código 204)
@@ -161,9 +140,14 @@ def ajustar_stock(
     db: Session = Depends(get_db),
     current_user: UsuarioDB = Depends(require_roles([Rol.ADMIN, Rol.EDITOR]))
 ):
+    """
+    Ajusta el stock de un producto (entrada o salida).
+    Registra automáticamente un movimiento en el historial.
+    Requiere rol admin o editor.
+    """
     es_entrada = tipo.lower() == "entrada"
     try:
-        producto = service_ajustar_stock(db, producto_id, cantidad, es_entrada)
+        producto = service_ajustar_stock(db, producto_id, cantidad, es_entrada, current_user.id)
         return {"mensaje": f"Stock actualizado. Nuevo stock: {producto.stock}"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -179,8 +163,98 @@ def get_productos_stock_bajo(
 ):
     """
     Retorna productos con stock bajo.
-    - Si se envía ?umbral=5 → stock <= 5.
-    - Si no → stock <= stock_minimo de cada producto.
+    - Si se envía ?umbral=5 -> stock <= 5.
+    - Si no -> stock <= stock_minimo de cada producto.
     Requiere autenticación.
     """
     return get_productos_stock_bajo(db, umbral)
+
+# ------------------------------------------------------------------------------
+# ENDPOINT: MOVIMIENTOS POR RANGO DE IDS
+# ------------------------------------------------------------------------------
+@router.get("/movimientos/range", response_model=list[Movimiento])
+def movimientos_por_rango_ids(
+    desde: int = Query(..., ge=1, description="ID inicial (inclusive)"),
+    hasta: int = Query(..., ge=1, description="ID final (inclusive)"),
+    db: Session = Depends(get_db),
+    current_user: UsuarioDB = Depends(get_current_active_user)
+):
+    """
+    Obtiene los movimientos cuyos IDs se encuentren en el rango [desde, hasta].
+    Útil para consultar bloques consecutivos de movimientos.
+
+    Parámetros:
+    - desde: ID inicial (inclusive, debe ser >= 1)
+    - hasta: ID final (inclusive, debe ser >= 1)
+
+    Respuesta:
+    - Lista de objetos Movimiento ordenados por ID ascendente.
+
+    Códigos de error:
+    - 400: si 'desde' > 'hasta'
+    - 401: No autenticado
+    - 422: Parámetros inválidos (no enteros, etc.)
+    """
+    if desde > hasta:
+        raise HTTPException(
+            status_code=400,
+            detail="El parámetro 'desde' debe ser menor o igual a 'hasta'"
+        )
+    movs = get_movimientos_por_rango_ids(db, desde, hasta)
+    return [Movimiento.model_validate(m) for m in movs]
+
+# ------------------------------------------------------------------------------
+# ENDPOINT: LISTAR MOVIMIENTOS (PAGINADO Y FILTRADO)
+# ------------------------------------------------------------------------------
+@router.get("/movimientos", response_model=list[Movimiento])
+def listar_movimientos(
+    skip: int = Query(0, ge=0, description="Número de movimientos a saltar"),
+    limit: int = Query(100, ge=1, le=1000, description="Máximo de movimientos a retornar"),
+    producto_id: Optional[int] = Query(None, description="Filtrar por ID de producto"),
+    tipo: Optional[str] = Query(None, pattern="^(entrada|salida)$", description="Filtrar por tipo ('entrada' o 'salida')"),
+    db: Session = Depends(get_db),
+    current_user: UsuarioDB = Depends(get_current_active_user)
+):
+    """
+    Lista los movimientos de stock con paginación y filtros opcionales.
+    Los movimientos se devuelven ordenados por fecha descendente (más reciente primero).
+
+    Parámetros query:
+    - skip: cantidad de registros a omitir (para paginación)
+    - limit: cantidad máxima de registros a devolver (entre 1 y 1000)
+    - producto_id: opcional, devuelve solo movimientos de ese producto
+    - tipo: opcional, 'entrada' o 'salida'
+
+    Respuesta: lista de objetos Movimiento.
+    Requiere autenticación.
+    """
+    return get_movimientos(db, skip=skip, limit=limit, producto_id=producto_id, tipo=tipo)
+
+# ------------------------------------------------------------------------------
+# ENDPOINT: OBTENER UN MOVIMIENTO POR ID
+# ------------------------------------------------------------------------------
+@router.get("/movimientos/{movimiento_id}", response_model=Movimiento)
+def obtener_movimiento(
+    movimiento_id: int,
+    db: Session = Depends(get_db),
+    current_user: UsuarioDB = Depends(get_current_active_user)
+):
+    """
+    Busca un movimiento de stock por su ID único.
+
+    Parámetros path:
+    - movimiento_id: ID del movimiento a consultar
+
+    Respuesta: objeto Movimiento.
+
+    Códigos de error:
+    - 404: si no existe un movimiento con ese ID
+    - 401: No autenticado
+    """
+    movimiento = get_movimiento_by_id(db, movimiento_id)
+    if not movimiento:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Movimiento no encontrado"
+        )
+    return Movimiento.model_validate(movimiento)

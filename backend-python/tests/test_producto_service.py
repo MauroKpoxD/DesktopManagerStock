@@ -1,6 +1,7 @@
 """
-ULTIMA MODIFICACION HECHA POR S4NDULOS 30/5/2025
+ULTIMA MODIFICACION HECHA POR S4NDULOS 3/6/2025
 CREACION DE PRODUCTOS Y TODAS LAS CONSULTAS DE GET/UPDATE/DELETE STOCK
+ACTUALIZADO: se agrega creación de usuario para probar ajuste de stock con movimiento
 """
 
 import pytest
@@ -14,6 +15,8 @@ from app.services.producto_service import (
     get_productos_stock_bajo
 )
 from app.schemas.producto import ProductoCreate, ProductoUpdate
+from app.models.usuario import UsuarioDB
+from app.core.security import get_password_hash
 
 def test_create_producto(db_session):
     producto_data = ProductoCreate(nombre="Laptop", precio=670000.50, stock=10, stock_minimo=2, stock_maximo=50)
@@ -30,15 +33,30 @@ def test_create_producto_duplicate_name(db_session):
         create_producto(db_session, producto1)
 
 def test_ajustar_stock(db_session):
+    # Crear un usuario de prueba para asociar al movimiento
+    user = UsuarioDB(
+        username="testuser_ajuste",
+        email="testajuste@example.com",
+        hashed_password=get_password_hash("testpass"),
+        rol="admin",
+        activo=True
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    
     producto = create_producto(db_session, ProductoCreate(nombre="Mouse", precio=25, stock=5))
-    ajustar_stock(db_session, producto.id, 3, es_entrada=True)
+    # Entrada
+    ajustar_stock(db_session, producto.id, 3, es_entrada=True, usuario_id=user.id)
     updated = get_producto_by_id(db_session, producto.id)
     assert updated.stock == 8
-    ajustar_stock(db_session, producto.id, 2, es_entrada=False)
+    # Salida
+    ajustar_stock(db_session, producto.id, 2, es_entrada=False, usuario_id=user.id)
     updated = get_producto_by_id(db_session, producto.id)
     assert updated.stock == 6
+    # Stock insuficiente
     with pytest.raises(ValueError, match="Stock insuficiente"):
-        ajustar_stock(db_session, producto.id, 10, es_entrada=False)
+        ajustar_stock(db_session, producto.id, 10, es_entrada=False, usuario_id=user.id)
 
 def test_get_productos_stock_bajo(db_session):
     create_producto(db_session, ProductoCreate(nombre="A", precio=1, stock=2, stock_minimo=5))

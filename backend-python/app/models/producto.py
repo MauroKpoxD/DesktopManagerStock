@@ -5,7 +5,7 @@ PROPÓSITO: Modelo SQLAlchemy para la tabla 'productos'
            Agregado índice en stock para mejorar consultas de stock bajo.
 """
 
-from sqlalchemy import Column, Integer, String, Float, Index   # ← agregar Index
+from sqlalchemy import Column, Integer, String, Float, Index
 from app.core.database import Base
 
 class ProductoDB(Base):
