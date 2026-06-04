@@ -11,7 +11,8 @@ from app.models.producto import ProductoDB
 from app.schemas.producto import ProductoCreate, ProductoUpdate
 from app.services.movimiento_service import registrar_movimiento
 from app.schemas.movimiento import MovimientoBase
-
+from app.core.logging_config import setup_logging
+logger = setup_logging()
 
 # ------------------------------------------------------------
 def get_all_productos(db: Session, skip: int = 0, limit: int = 100):
@@ -60,17 +61,33 @@ def update_producto(db: Session, producto_id: int, producto_update: ProductoUpda
         if existente:
             raise ValueError("Ya existe un producto con ese nombre")
     
-    # Validar rangos si se actualizan ambos límites
-    if producto_update.stock_maximo is not None and producto_update.stock_minimo is not None:
-        if producto_update.stock_maximo < producto_update.stock_minimo:
-            raise ValueError("El stock máximo no puede ser menor al mínimo")
+    # Validar stock negativo
+    if producto_update.stock is not None and producto_update.stock < 0:
+        raise ValueError("El stock no puede ser negativo")
     
-    for key, value in producto_update.model_dump(exclude_unset=True).items():
+    # Aplicar cambios temporalmente para validar consistencia
+    # Guardamos valores originales por si falla
+    original_min = db_producto.stock_minimo
+    original_max = db_producto.stock_maximo
+    original_stock = db_producto.stock
+    
+    # Aplicar updates (solo los presentes)
+    update_data = producto_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
         setattr(db_producto, key, value)
     
-    # Verificar que el stock actual no supere el máximo (si se actualizó el máximo)
-    if producto_update.stock_maximo is not None and db_producto.stock > db_producto.stock_maximo:
-        raise ValueError(f"El stock actual ({db_producto.stock}) supera el nuevo máximo ({db_producto.stock_maximo})")
+    # Validar que stock_minimo <= stock_maximo
+    if db_producto.stock_minimo > db_producto.stock_maximo:
+        # Revertir cambios antes de lanzar excepción
+        db_producto.stock_minimo = original_min
+        db_producto.stock_maximo = original_max
+        raise ValueError("El stock mínimo no puede ser mayor que el máximo")
+    
+    # Validar que stock actual no supere stock_maximo
+    if db_producto.stock > db_producto.stock_maximo:
+        # Revertir stock
+        db_producto.stock = original_stock
+        raise ValueError(f"El stock actual ({db_producto.stock}) no puede superar el máximo ({db_producto.stock_maximo})")
     
     db.commit()
     db.refresh(db_producto)
@@ -137,6 +154,8 @@ def ajustar_stock(db: Session, producto_id: int, cantidad: int, es_entrada: bool
         usuario_id=usuario_id
     )
     registrar_movimiento(db, movimiento_data)
+    logger.info(f"Ajuste de stock: producto_id={producto_id}, usuario_id={usuario_id}, tipo={tipo}, cantidad={cantidad}, stock_resultante={producto.stock}")
+    return producto
 
     return producto
 

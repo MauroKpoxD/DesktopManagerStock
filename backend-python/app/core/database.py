@@ -1,5 +1,5 @@
 """
-ÚLTIMA MODIFICACIÓN: 28/5/2025 por S4NDULOS
+ÚLTIMA MODIFICACIÓN: 4/6/2025 por S4NDULOS
 PROPÓSITO: Configura la conexión a la base de datos (SQLite por defecto),
            crea el motor, las sesiones, y provee la dependencia get_db
            También incluye un seeder inicial (init_db) con datos por defecto
@@ -8,6 +8,9 @@ PROPÓSITO: Configura la conexión a la base de datos (SQLite por defecto),
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker   
 from app.core.config import settings
+import secrets
+import string
+import logging
 
 # -------------------------------------------------------------------
 # Configuracion del motor segun el tipo de DB 
@@ -46,12 +49,13 @@ def init_db():
     from app.models.usuario import UsuarioDB
     from app.core.security import get_password_hash
     from app.core.roles import Rol
-    import logging
     
     db = SessionLocal()
     admin = db.query(UsuarioDB).filter(UsuarioDB.username == "admin").first()
     if not admin:
-        default_password = "admin123"
+        # Generar contraseña aleatoria segura (12 caracteres alfanuméricos + símbolos)
+        alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+        default_password = ''.join(secrets.choice(alphabet) for _ in range(12))
         admin_user = UsuarioDB(
             username="admin",
             email="admin@stock.com",
@@ -62,7 +66,7 @@ def init_db():
         db.add(admin_user)
         db.commit()
         logging.warning(
-            f"Usuario 'admin' creado con contraseña por defecto: '{default_password}'. "
-            "CÁMBIELA INMEDIATAMENTE después del primer inicio de sesión."
+            f"Usuario 'admin' creado con contraseña aleatoria: '{default_password}'. "
+            "GUARDE ESTA CONTRASEÑA DE FORMA SEGURA O CÁMBIELA INMEDIATAMENTE tras el primer inicio de sesión."
         )
     db.close()

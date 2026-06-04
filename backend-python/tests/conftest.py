@@ -1,5 +1,5 @@
 """
-ÚLTIMA MODIFICACIÓN: 30/05/2025 por S4NDULOS
+ÚLTIMA MODIFICACIÓN: 4/6/2025 por S4NDULOS
 PROPÓSITO: Fixtures globales para pytest.
 """
 
@@ -16,6 +16,10 @@ from main import app
 from app.core.security import create_access_token, get_password_hash
 from app.models.usuario import UsuarioDB
 from app.models.producto import ProductoDB
+from app.core.config import settings
+
+# DESACTIVAR RATE LIMITING PARA LOS TESTS
+settings.rate_limit_enabled = False
 
 temp_db_file = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
 temp_db_path = temp_db_file.name

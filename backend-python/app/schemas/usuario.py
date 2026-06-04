@@ -1,11 +1,10 @@
 """
-ÚLTIMA MODIFICACIÓN: 4/5/2025 por S4NDULOS
+ÚLTIMA MODIFICACIÓN: 4/6/2025 por S4NDULOS
 PROPÓSITO: Schemas Pydantic para usuarios y autenticación
-           Define UsuarioBase, UsuarioCreate, UsuarioUpdate, Usuario (respuesta),
-           Token y TokenData para el flujo JWT
+           Incluye validación de contraseña segura
 """
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from typing import Optional
 
 class UsuarioBase(BaseModel):
@@ -14,7 +13,18 @@ class UsuarioBase(BaseModel):
     rol: Optional[str] = "lector"
 
 class UsuarioCreate(UsuarioBase):
-    password: str = Field(..., min_length=4)
+    password: str = Field(..., min_length=8)
+
+    @field_validator('password')
+    def validate_password_strength(cls, v):
+        if not any(char.isupper() for char in v):
+            raise ValueError('La contraseña debe contener al menos una letra mayúscula')
+        if not any(char.isdigit() for char in v):
+            raise ValueError('La contraseña debe contener al menos un número')
+        # Opcional: al menos un carácter especial
+        if not any(char in "!@#$%^&*()-_=+[]{}|;:,.<>?/" for char in v):
+            raise ValueError('La contraseña debe contener al menos un carácter especial')
+        return v
 
 class UsuarioUpdate(BaseModel):
     email: Optional[EmailStr] = None

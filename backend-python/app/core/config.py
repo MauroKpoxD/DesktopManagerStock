@@ -1,11 +1,11 @@
 """
-ÚLTIMA MODIFICACIÓN: 30/5/2025 por S4NDULOS
+ÚLTIMA MODIFICACIÓN: 4/6/2025 por S4NDULOS
 PROPÓSITO: Carga variables de entorno y expone la configuración global
-           Incluye rutas de directorios, datos de autenticación y umbrales de stock
+           Incluye validación de SECRET_KEY, control de seeder, CORS y rate limiting
 """
 
 from pydantic_settings import BaseSettings
-from pydantic import ConfigDict, model_validator
+from pydantic import ConfigDict, model_validator, Field
 from pathlib import Path
 
 class Settings(BaseSettings):
@@ -18,14 +18,23 @@ class Settings(BaseSettings):
     # ---------- Base de datos ----------
     database_url: str = "sqlite:///./stock.db"
     db_echo: bool = False
+    run_seeder: bool = False   # Solo ejecutar en desarrollo
 
     # ---------- Seguridad ----------
-    secret_key: str   
+    secret_key: str = Field(..., min_length=32)   # Obligatoria
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
     # ---------- Stock ----------
     stock_alert_threshold: int = 5
+
+    # ---------- CORS ----------
+    cors_origins: str = "http://localhost:3000"
+
+    # ---------- Rate limiting ----------
+    rate_limit_enabled: bool = True
+    login_rate_limit: str = "5/minute"
+    register_rate_limit: str = "2/minute"
 
     # ---------- Rutas de usuario ----------
     users_data_dir: str = "./usuarios"
@@ -48,12 +57,27 @@ class Settings(BaseSettings):
         return Path(self.users_data_dir).resolve()
 
     def get_user_dir(self, username: str) -> Path:
-        """Carpeta personal del usuario (se crea si no existe)"""
         user_path = self.users_root / username
         user_path.mkdir(parents=True, exist_ok=True)
         return user_path
 
-    # ---------- Validaciones y creacion de carpetas ----------
+    # ---------- Validaciones ----------
+    @model_validator(mode='after')
+    def validate_secret_key(self):
+        # Rechazar clave por defecto o vacía
+        if not self.secret_key or self.secret_key.strip() == "":
+            raise ValueError(
+                "SECRET_KEY no puede estar vacía. "
+                "Genere una nueva con: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+            )
+        # Si es la del ejemplo (aunque se pide que la completen)
+        if self.secret_key == "F99NW4ztvIwuN1YDAEFKgMzYOQlhzuZn":
+            raise ValueError(
+                "SECRET_KEY no puede ser la del ejemplo. "
+                "Genere una nueva con: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+            )
+        return self
+
     @model_validator(mode='after')
     def ensure_directories(self):
         self.users_root.mkdir(parents=True, exist_ok=True)
@@ -61,11 +85,11 @@ class Settings(BaseSettings):
         self.logs_dir.mkdir(exist_ok=True)
         return self
 
-    # Configuración de pydatic
     model_config = ConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        case_sensitive=False
+        case_sensitive=False,
+        extra="ignore"
     )
 
 settings = Settings()
