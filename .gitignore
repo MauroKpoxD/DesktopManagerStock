@@ -135,3 +135,12 @@ Desktop.ini
 # Linux
 .directory
 *~
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.cache
+
+# Proyecto cliente C# (todavia no subir nada)
+cliente-csharp/
