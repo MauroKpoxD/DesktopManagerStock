@@ -1,17 +1,17 @@
 """
-ÚLTIMA MODIFICACIÓN: 4/6/2025 por S4NDULOS
+ÚLTIMA MODIFICACIÓN: 9/6/2025 por S4NDULOS
 PROPÓSITO: Prueba el flujo completo de autenticación: registro, login,
            y acceso a endpoint protegido. Incluye tests de seguridad.
 """
 
 import pytest
-from app.core.config import settings  # Importar configuración global
+from app.core.config import settings
 
 def test_register_and_login(client):
     reg_data = {
         "username": "pytestuser",
         "email": "pytest@sixseven.com",
-        "password": "Test67!!",  # 8 caracteres (cumple mayúscula, número, especial)
+        "password": "Test67!!",
         "rol": "lector"
     }
     response = client.post("/api/v1/auth/register", json=reg_data)
@@ -59,13 +59,41 @@ def test_register_weak_password(client):
         f"Error inesperado: {detail}"
 
 def test_login_rate_limit(client):
-    """Verifica el rate limiting en login (si está activado)."""
     if not settings.rate_limit_enabled:
         pytest.skip("Rate limiting desactivado en entorno de pruebas")
-    # Realiza 6 intentos con credenciales inválidas
     for _ in range(6):
         response = client.post("/api/v1/auth/login", data={"username": "nonexistent", "password": "wrong"})
         if response.status_code == 429:
             break
     else:
         pytest.fail("No se alcanzó el rate limit después de 6 intentos")
+
+# -------------------- NUEVOS TESTS --------------------
+
+def test_protected_endpoint_with_invalid_token(client):
+    headers = {"Authorization": "Bearer tokeninvalido"}
+    response = client.get("/api/v1/productos", headers=headers)
+    assert response.status_code == 401
+
+def test_protected_endpoint_without_token(client):
+    response = client.get("/api/v1/productos")
+    assert response.status_code == 401
+
+def test_register_duplicate_username(client):
+    reg_data = {
+        "username": "duplicate",
+        "email": "dup1@test.com",
+        "password": "SecurePass123!"
+    }
+    client.post("/api/v1/auth/register", json=reg_data)
+    response = client.post("/api/v1/auth/register", json=reg_data)
+    assert response.status_code == 400
+    assert "Nombre de usuario ya registrado" in response.json()["detail"]
+
+def test_register_duplicate_email(client):
+    reg_data1 = {"username": "user1", "email": "same@test.com", "password": "SecurePass123!"}
+    reg_data2 = {"username": "user2", "email": "same@test.com", "password": "SecurePass123!"}
+    client.post("/api/v1/auth/register", json=reg_data1)
+    response = client.post("/api/v1/auth/register", json=reg_data2)
+    assert response.status_code == 400
+    assert "Email ya registrado" in response.json()["detail"]

@@ -1,12 +1,26 @@
 """
-ÚLTIMA MODIFICACIÓN: 4/6/2025 por S4NDULOS
+ÚLTIMA MODIFICACIÓN: 9/6/2025 por S4NDULOS
 PROPÓSITO: Fixtures globales para pytest.
 """
 
+import os
+import sys
 import pytest
 import tempfile
-import os
 import atexit
+
+# Desactivar rate limiting por completo
+os.environ["RATE_LIMIT_ENABLED"] = "false"
+os.environ["REGISTER_RATE_LIMIT"] = "1000/minute"
+os.environ["LOGIN_RATE_LIMIT"] = "1000/minute"
+
+# Importar configuración después de establecer variables
+from app.core.config import settings
+settings.rate_limit_enabled = False
+settings.register_rate_limit = "1000/minute"
+settings.login_rate_limit = "1000/minute"
+
+# Ahora importar el resto
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -15,11 +29,6 @@ import app.core.database as database
 from main import app
 from app.core.security import create_access_token, get_password_hash
 from app.models.usuario import UsuarioDB
-from app.models.producto import ProductoDB
-from app.core.config import settings
-
-# DESACTIVAR RATE LIMITING PARA LOS TESTS
-settings.rate_limit_enabled = False
 
 temp_db_file = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
 temp_db_path = temp_db_file.name
@@ -47,7 +56,6 @@ app.dependency_overrides[get_db] = override_get_db
 
 @pytest.fixture(scope="function", autouse=True)
 def clean_tables():
-    """Limpia todas las tablas antes de cada prueba."""
     with _test_engine.connect() as conn:
         for table in reversed(Base.metadata.sorted_tables):
             conn.execute(table.delete())
@@ -86,4 +94,25 @@ def test_user(db_session):
 @pytest.fixture(scope="function")
 def auth_headers(test_user):
     access_token = create_access_token(data={"sub": test_user.username})
+    return {"Authorization": f"Bearer {access_token}"}
+
+@pytest.fixture(scope="function")
+def test_lector(db_session):
+    db_session.query(UsuarioDB).filter(UsuarioDB.username == "lector").delete()
+    db_session.commit()
+    user = UsuarioDB(
+        username="lector",
+        email="lector@example.com",
+        hashed_password=get_password_hash("lectorpass"),
+        rol="lector",
+        activo=True
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+@pytest.fixture(scope="function")
+def lector_headers(test_lector):
+    access_token = create_access_token(data={"sub": test_lector.username})
     return {"Authorization": f"Bearer {access_token}"}

@@ -1,5 +1,5 @@
 """
-ÚLTIMA MODIFICACIÓN: 3/6/2025 por S4NDULOS
+ÚLTIMA MODIFICACIÓN: 9/6/2025 por S4NDULOS
 PROPÓSITO: Tests para el servicio y endpoints de movimientos de stock
 """
 
@@ -21,7 +21,6 @@ from app.core.security import get_password_hash
 # ------------------------------------------------------------------------------
 
 def test_registrar_movimiento(db_session):
-    # Crear producto y usuario de prueba
     producto = create_producto(db_session, ProductoCreate(nombre="ProdMov", precio=10, stock=5))
     user = UsuarioDB(
         username="movuser",
@@ -63,14 +62,6 @@ def test_get_movimiento_by_id(db_session):
     db_session.commit()
     db_session.refresh(user)
 
-    mov_data = MovimientoBase(
-        producto_id=producto.id,
-        tipo="salida",
-        cantidad=0,  # salida sin stock? En realidad mejor crear con entrada primero
-        stock_resultante=0,
-        usuario_id=user.id
-    )
-    # Ajustamos para que tenga sentido: creamos una entrada
     mov_data_entrada = MovimientoBase(
         producto_id=producto.id,
         tipo="entrada",
@@ -97,7 +88,6 @@ def test_get_movimientos(db_session):
     db_session.commit()
     db_session.refresh(user)
 
-    # Registrar varios movimientos
     for i in range(3):
         mov_data = MovimientoBase(
             producto_id=producto.id,
@@ -108,19 +98,15 @@ def test_get_movimientos(db_session):
         )
         registrar_movimiento(db_session, mov_data)
 
-    # Obtener todos
     todos = get_movimientos(db_session)
     assert len(todos) == 3
 
-    # Paginación
     primeros = get_movimientos(db_session, skip=0, limit=2)
     assert len(primeros) == 2
 
-    # Filtro por producto_id
     filtrados = get_movimientos(db_session, producto_id=producto.id)
     assert len(filtrados) == 3
 
-    # Filtro por tipo
     solo_entradas = get_movimientos(db_session, tipo="entrada")
     assert len(solo_entradas) == 2
 
@@ -149,9 +135,8 @@ def test_get_movimientos_por_rango_ids(db_session):
         mov = registrar_movimiento(db_session, mov_data)
         ids.append(mov.id)
 
-    # Obtener rango desde el segundo hasta el cuarto
     rango = get_movimientos_por_rango_ids(db_session, ids[1], ids[3])
-    assert len(rango) == 3  # ids[1], ids[2], ids[3]
+    assert len(rango) == 3
     assert rango[0].id == ids[1]
     assert rango[-1].id == ids[3]
 
@@ -160,7 +145,6 @@ def test_get_movimientos_por_rango_ids(db_session):
 # ------------------------------------------------------------------------------
 
 def test_ajustar_stock_registra_movimiento(db_session):
-    # Crear producto y usuario
     producto = create_producto(db_session, ProductoCreate(nombre="StockTest", precio=50, stock=10, stock_maximo=20))
     user = UsuarioDB(
         username="ajustador",
@@ -173,10 +157,8 @@ def test_ajustar_stock_registra_movimiento(db_session):
     db_session.commit()
     db_session.refresh(user)
 
-    # Ajustar stock (entrada)
     ajustar_stock(db_session, producto.id, 5, es_entrada=True, usuario_id=user.id)
 
-    # Verificar que se haya creado un movimiento
     movimientos = get_movimientos(db_session, producto_id=producto.id)
     assert len(movimientos) == 1
     mov = movimientos[0]
@@ -185,11 +167,10 @@ def test_ajustar_stock_registra_movimiento(db_session):
     assert mov.stock_resultante == 15
     assert mov.usuario_id == user.id
 
-    # Ajustar salida
     ajustar_stock(db_session, producto.id, 3, es_entrada=False, usuario_id=user.id)
     movimientos = get_movimientos(db_session, producto_id=producto.id)
     assert len(movimientos) == 2
-    mov_salida = movimientos[0]  # el más reciente (orden descendente por fecha)
+    mov_salida = movimientos[0]
     assert mov_salida.tipo == "salida"
     assert mov_salida.cantidad == 3
     assert mov_salida.stock_resultante == 12
@@ -199,23 +180,18 @@ def test_ajustar_stock_registra_movimiento(db_session):
 # ------------------------------------------------------------------------------
 
 def test_endpoint_listar_movimientos(client, auth_headers, db_session):
-    # Crear producto y usuario para asociar movimientos
     producto = create_producto(db_session, ProductoCreate(nombre="EndpointProd", precio=60, stock=5))
-    # El usuario autenticado es "testuser" (de conftest). Obtenemos su ID
     from app.models.usuario import UsuarioDB
     user = db_session.query(UsuarioDB).filter(UsuarioDB.username == "testuser").first()
     assert user is not None
 
-    # Registrar movimiento
     ajustar_stock(db_session, producto.id, 2, es_entrada=True, usuario_id=user.id)
 
-    # GET /movimientos
     response = client.get("/api/v1/movimientos", headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
     assert len(data) >= 1
-    # Verificar estructura
     assert "id" in data[0]
     assert "producto_id" in data[0]
     assert "tipo" in data[0]
@@ -235,7 +211,6 @@ def test_endpoint_obtener_movimiento_por_id(client, auth_headers, db_session):
     assert data["id"] == mov_id
     assert data["producto_id"] == producto.id
 
-    # ID inexistente
     response = client.get("/api/v1/movimientos/99999", headers=auth_headers)
     assert response.status_code == 404
 
@@ -256,6 +231,17 @@ def test_endpoint_movimientos_rango_ids(client, auth_headers, db_session):
     assert data[0]["id"] == desde
     assert data[-1]["id"] == hasta
 
-    # Error si desde > hasta
     response = client.get(f"/api/v1/movimientos/range?desde={hasta}&hasta={desde}", headers=auth_headers)
     assert response.status_code == 400
+
+# -------------------- NUEVOS TESTS --------------------
+
+def test_movimientos_range_limit_exceeded(client, auth_headers):
+    response = client.get("/api/v1/movimientos/range?desde=1&hasta=1001", headers=auth_headers)
+    assert response.status_code == 400
+    assert "no puede superar los 1000 registros" in response.json()["detail"].lower()
+
+def test_get_movimientos_filtro_producto_inexistente(client, auth_headers):
+    response = client.get("/api/v1/movimientos?producto_id=99999", headers=auth_headers)
+    assert response.status_code == 200
+    assert response.json() == []

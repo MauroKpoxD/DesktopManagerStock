@@ -1,5 +1,5 @@
 """
-ÚLTIMA MODIFICACIÓN: 24/05/2025 por S4NDULOS
+ÚLTIMA MODIFICACIÓN: 9/6/2025 por S4NDULOS
 PROPÓSITO: Schemas Pydantic para validación de datos de productos
            Incluye ProductoBase, ProductoCreate, ProductoUpdate, Producto (respuesta)
 """
@@ -20,11 +20,10 @@ class ProductoCreate(ProductoBase):
 class ProductoUpdate(BaseModel):
     nombre: Optional[str] = None
     precio: Optional[float] = None
-    stock: Optional[int] = None
     stock_minimo: Optional[int] = None
     stock_maximo: Optional[int] = None
 
 class Producto(ProductoBase):
     id: int
 
-    model_config = ConfigDict(from_attributes=True) 
+    model_config = ConfigDict(from_attributes=True)

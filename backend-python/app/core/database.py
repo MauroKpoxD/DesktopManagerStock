@@ -1,5 +1,5 @@
 """
-ÚLTIMA MODIFICACIÓN: 4/6/2025 por S4NDULOS
+ÚLTIMA MODIFICACIÓN: 9/6/2025 por S4NDULOS
 PROPÓSITO: Configura la conexión a la base de datos (SQLite por defecto),
            crea el motor, las sesiones, y provee la dependencia get_db
            También incluye un seeder inicial (init_db) con datos por defecto
@@ -53,20 +53,23 @@ def init_db():
     db = SessionLocal()
     admin = db.query(UsuarioDB).filter(UsuarioDB.username == "admin").first()
     if not admin:
-        # Generar contraseña aleatoria segura (12 caracteres alfanuméricos + símbolos)
         alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
         default_password = ''.join(secrets.choice(alphabet) for _ in range(12))
         admin_user = UsuarioDB(
             username="admin",
-            email="admin@stock.com",
+            email="s4ndulos@help.com",
             hashed_password=get_password_hash(default_password),
             rol=Rol.ADMIN.value,
             activo=True
         )
         db.add(admin_user)
         db.commit()
-        logging.warning(
-            f"Usuario 'admin' creado con contraseña aleatoria: '{default_password}'. "
-            "GUARDE ESTA CONTRASEÑA DE FORMA SEGURA O CÁMBIELA INMEDIATAMENTE tras el primer inicio de sesión."
-        )
+
+        # --------------------------
+        if settings.environment == "development":
+            logging.warning(f"Usuario 'admin' creado con contraseña: '{default_password}'")
+        else:
+            password_file = settings.logs_dir / ".admin_password.txt"
+            password_file.write_text(f"admin:{default_password}")
+            logging.warning(f"Usuario 'admin' creado. Contraseña guardada en {password_file}")
     db.close()
