@@ -1,5 +1,5 @@
 """
-ÚLTIMA MODIFICACIÓN: 4/6/2025 por S4NDULOS
+ÚLTIMA MODIFICACIÓN: 9/6/2025 por S4NDULOS
 PROPÓSITO: Contiene las operaciones CRUD y lógica de negocio para productos
            MEJORAS: respeta stock_maximo, evita duplicados en update,
            validaciones de rangos y valores positivos
@@ -9,7 +9,7 @@ PROPÓSITO: Contiene las operaciones CRUD y lógica de negocio para productos
 from sqlalchemy.orm import Session
 from app.models.producto import ProductoDB
 from app.schemas.producto import ProductoCreate, ProductoUpdate
-from app.services.movimiento_service import registrar_movimiento
+from app.models.movimiento import MovimientoDB
 from app.schemas.movimiento import MovimientoBase
 from app.core.logging_config import setup_logging
 logger = setup_logging()
@@ -26,7 +26,6 @@ def get_producto_by_id(db: Session, producto_id: int):
 
 # ------------------------------------------------------------
 def create_producto(db: Session, producto: ProductoCreate):
-    # Validaciones de negocio
     if producto.precio <= 0:
         raise ValueError("El precio debe ser mayor a cero")
     if producto.stock < 0:
@@ -37,7 +36,7 @@ def create_producto(db: Session, producto: ProductoCreate):
         raise ValueError("El stock máximo debe ser mayor o igual al mínimo")
     if producto.stock > producto.stock_maximo:
         raise ValueError(f"El stock inicial no puede superar el máximo de {producto.stock_maximo}")
-    # Unicidad
+    
     existente = db.query(ProductoDB).filter(ProductoDB.nombre == producto.nombre).first()
     if existente:
         raise ValueError("Ya existe un producto con ese nombre")
@@ -55,43 +54,32 @@ def update_producto(db: Session, producto_id: int, producto_update: ProductoUpda
     if not db_producto:
         return None
     
-    # Si cambia el nombre, verificar unicidad
     if producto_update.nombre and producto_update.nombre != db_producto.nombre:
         existente = db.query(ProductoDB).filter(ProductoDB.nombre == producto_update.nombre).first()
         if existente:
             raise ValueError("Ya existe un producto con ese nombre")
     
-    # Validar stock negativo
-    if producto_update.stock is not None and producto_update.stock < 0:
-        raise ValueError("El stock no puede ser negativo")
-    
-    # Aplicar cambios temporalmente para validar consistencia
-    # Guardamos valores originales por si falla
     original_min = db_producto.stock_minimo
     original_max = db_producto.stock_maximo
     original_stock = db_producto.stock
     
-    # Aplicar updates (solo los presentes)
     update_data = producto_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(db_producto, key, value)
     
-    # Validar que stock_minimo <= stock_maximo
     if db_producto.stock_minimo > db_producto.stock_maximo:
-        # Revertir cambios antes de lanzar excepción
         db_producto.stock_minimo = original_min
         db_producto.stock_maximo = original_max
         raise ValueError("El stock mínimo no puede ser mayor que el máximo")
     
-    # Validar que stock actual no supere stock_maximo
     if db_producto.stock > db_producto.stock_maximo:
-        # Revertir stock
         db_producto.stock = original_stock
         raise ValueError(f"El stock actual ({db_producto.stock}) no puede superar el máximo ({db_producto.stock_maximo})")
     
     db.commit()
     db.refresh(db_producto)
     return db_producto
+
 
 
 # ------------------------------------------------------------
@@ -102,6 +90,7 @@ def delete_producto(db: Session, producto_id: int):
         db.commit()
         return True
     return False
+
 
 
 # ------------------------------------------------------------
@@ -141,11 +130,7 @@ def ajustar_stock(db: Session, producto_id: int, cantidad: int, es_entrada: bool
             raise ValueError("Stock insuficiente")
         producto.stock -= cantidad
         tipo = "salida"
-    
-    db.commit()
-    db.refresh(producto)
 
-    # Registrar movimiento en el historial
     movimiento_data = MovimientoBase(
         producto_id=producto_id,
         tipo=tipo,
@@ -153,11 +138,16 @@ def ajustar_stock(db: Session, producto_id: int, cantidad: int, es_entrada: bool
         stock_resultante=producto.stock,
         usuario_id=usuario_id
     )
-    registrar_movimiento(db, movimiento_data)
+    db_movimiento = MovimientoDB(**movimiento_data.model_dump())
+    db.add(db_movimiento)
+    
+    db.commit()
+    db.refresh(producto)
+    
     logger.info(f"Ajuste de stock: producto_id={producto_id}, usuario_id={usuario_id}, tipo={tipo}, cantidad={cantidad}, stock_resultante={producto.stock}")
     return producto
 
-    return producto
+
 
 
 # ------------------------------------------------------------

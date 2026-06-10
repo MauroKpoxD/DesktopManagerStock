@@ -1,5 +1,5 @@
 """
-ÚLTIMA MODIFICACIÓN: 3/6/2025 por S4NDULOS
+ÚLTIMA MODIFICACIÓN: 9/6/2025 por S4NDULOS
 PROPÓSITO: Define los endpoints públicos y protegidos de la API
            Agrupa rutas de productos con autenticación JWT y control de roles
            MEJORAS: paginación, validación de cantidad>0, uso de require_roles
@@ -32,7 +32,6 @@ from app.services.movimiento_service import (
     get_movimientos_por_rango_ids
 )
 
-# establezco route con /api/v1
 router = APIRouter(prefix="/api/v1", tags=["productos"])
 
 # ------------------------------------------------------------------------------
@@ -127,7 +126,6 @@ def delete_producto(
     """
     if not service_delete_producto(db, producto_id):
         raise HTTPException(status_code=404, detail="Producto no encontrado")
-    # No hay return (código 204)
 
 # ------------------------------------------------------------------------------
 # ENDPOINT: AJUSTAR STOCK (entrada/salida) - solo admin o editor
@@ -155,8 +153,8 @@ def ajustar_stock(
 # ------------------------------------------------------------------------------
 # ENDPOINT: PRODUCTOS CON STOCK BAJO (requiere autenticación)
 # ------------------------------------------------------------------------------
-@router.get("/productos/stock-bajo", response_model=list[Producto])
-def get_productos_stock_bajo(
+@router.get("/productos/stock/bajo", response_model=list[Producto])
+def productos_stock_bajo(  # Nombre diferente para evitar recursión
     umbral: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: UsuarioDB = Depends(get_current_active_user)
@@ -167,7 +165,8 @@ def get_productos_stock_bajo(
     - Si no -> stock <= stock_minimo de cada producto.
     Requiere autenticación.
     """
-    return get_productos_stock_bajo(db, umbral)
+    productos_db = get_productos_stock_bajo(db, umbral)  # Llama al servicio
+    return [Producto.model_validate(p) for p in productos_db]
 
 # ------------------------------------------------------------------------------
 # ENDPOINT: MOVIMIENTOS POR RANGO DE IDS
@@ -191,14 +190,20 @@ def movimientos_por_rango_ids(
     - Lista de objetos Movimiento ordenados por ID ascendente.
 
     Códigos de error:
-    - 400: si 'desde' > 'hasta'
+    - 400: si 'desde' > 'hasta' o el rango supera los 1000 registros
     - 401: No autenticado
     - 422: Parámetros inválidos (no enteros, etc.)
     """
+    MAX_RANGE = 1000
     if desde > hasta:
         raise HTTPException(
             status_code=400,
             detail="El parámetro 'desde' debe ser menor o igual a 'hasta'"
+        )
+    if hasta - desde + 1 > MAX_RANGE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"El rango no puede superar los {MAX_RANGE} registros"
         )
     movs = get_movimientos_por_rango_ids(db, desde, hasta)
     return [Movimiento.model_validate(m) for m in movs]
