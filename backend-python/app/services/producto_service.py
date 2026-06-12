@@ -1,9 +1,10 @@
 """
-ÚLTIMA MODIFICACIÓN: 9/6/2025 por S4NDULOS
+ÚLTIMA MODIFICACIÓN: 12/6/2025 por S4NDULOS
 PROPÓSITO: Contiene las operaciones CRUD y lógica de negocio para productos
            MEJORAS: respeta stock_maximo, evita duplicados en update,
            validaciones de rangos y valores positivos
            NUEVO: Registro automático de movimientos al ajustar stock
+           FIX: Validación de stock máximo en update con restauración segura
 """
 
 from sqlalchemy.orm import Session
@@ -54,32 +55,37 @@ def update_producto(db: Session, producto_id: int, producto_update: ProductoUpda
     if not db_producto:
         return None
     
+    # Validar nombre duplicado
     if producto_update.nombre and producto_update.nombre != db_producto.nombre:
         existente = db.query(ProductoDB).filter(ProductoDB.nombre == producto_update.nombre).first()
         if existente:
             raise ValueError("Ya existe un producto con ese nombre")
     
+    # Guardar valores originales para posible restauración
+    original_stock = db_producto.stock
     original_min = db_producto.stock_minimo
     original_max = db_producto.stock_maximo
-    original_stock = db_producto.stock
     
+    # Aplicar cambios en memoria
     update_data = producto_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(db_producto, key, value)
     
+    # Validaciones después de cambios
     if db_producto.stock_minimo > db_producto.stock_maximo:
+        # Revertir mín/máx
         db_producto.stock_minimo = original_min
         db_producto.stock_maximo = original_max
         raise ValueError("El stock mínimo no puede ser mayor que el máximo")
     
     if db_producto.stock > db_producto.stock_maximo:
+        # Revertir stock
         db_producto.stock = original_stock
         raise ValueError(f"El stock actual ({db_producto.stock}) no puede superar el máximo ({db_producto.stock_maximo})")
     
     db.commit()
     db.refresh(db_producto)
     return db_producto
-
 
 
 # ------------------------------------------------------------
@@ -90,7 +96,6 @@ def delete_producto(db: Session, producto_id: int):
         db.commit()
         return True
     return False
-
 
 
 # ------------------------------------------------------------
@@ -146,8 +151,6 @@ def ajustar_stock(db: Session, producto_id: int, cantidad: int, es_entrada: bool
     
     logger.info(f"Ajuste de stock: producto_id={producto_id}, usuario_id={usuario_id}, tipo={tipo}, cantidad={cantidad}, stock_resultante={producto.stock}")
     return producto
-
-
 
 
 # ------------------------------------------------------------

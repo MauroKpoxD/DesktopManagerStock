@@ -1,8 +1,8 @@
 """
-ÚLTIMA MODIFICACIÓN: 9/6/2025 por S4NDULOS
+ÚLTIMA MODIFICACIÓN: 12/6/2025 por S4NDULOS
 PROPÓSITO: Punto de entrada de la API. Crea la app FastAPI,
            inicializa la base de datos (tablas y seeder condicional) mediante lifespan,
-           e incluye los routers. Añade CORS y rate limiting condicional.
+           e incluye los routers. Añade CORS y rate limiting condicional
 """
 
 from contextlib import asynccontextmanager
@@ -28,11 +28,9 @@ logger = setup_logging()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    init_db()  # Siempre inicializa (crea admin si no existe)
     if settings.run_seeder:
-        logger.info("Ejecutando seeder de base de datos (RUN_SEEDER=true)")
-        init_db()
-    else:
-        logger.info("Seeder deshabilitado (RUN_SEEDER=false)")
+        logger.info("Seeder adicional activado (run_seeder=True) - pendiente de implementar datos demo")
     yield
 
 app = FastAPI(
@@ -54,7 +52,7 @@ app.add_middleware(
 
 # Rate limiting condicional
 if settings.rate_limit_enabled:
-    app.state.limiter = limiter
+    app.state.limiter = limiter._limiter  # acceder al limiter real
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     logger.info("Rate limiting activado")
 else:

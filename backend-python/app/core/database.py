@@ -1,8 +1,9 @@
 """
-ÚLTIMA MODIFICACIÓN: 9/6/2025 por S4NDULOS
+ÚLTIMA MODIFICACIÓN: 12/6/2025 por S4NDULOS
 PROPÓSITO: Configura la conexión a la base de datos (SQLite por defecto),
            crea el motor, las sesiones, y provee la dependencia get_db
-           También incluye un seeder inicial (init_db) con datos por defecto
+           También incluye un seeder inicial (init_db) que siempre crea el usuario admin
+           y opcionalmente datos de ejemplo si run_seeder=True
 """
 
 from sqlalchemy import create_engine
@@ -51,6 +52,7 @@ def init_db():
     from app.core.roles import Rol
     
     db = SessionLocal()
+    # Crear admin siempre que no exista
     admin = db.query(UsuarioDB).filter(UsuarioDB.username == "admin").first()
     if not admin:
         alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
@@ -65,11 +67,16 @@ def init_db():
         db.add(admin_user)
         db.commit()
 
-        # --------------------------
         if settings.environment == "development":
             logging.warning(f"Usuario 'admin' creado con contraseña: '{default_password}'")
         else:
             password_file = settings.logs_dir / ".admin_password.txt"
             password_file.write_text(f"admin:{default_password}")
             logging.warning(f"Usuario 'admin' creado. Contraseña guardada en {password_file}")
+    
+    # Si run_seeder es True, se pueden añadir datos de ejemplo adicionales
+    if settings.run_seeder:
+        # Aquí iría la creación de productos de demostración, etc.
+        logging.info("Seeder adicional activado - no hay datos demo implementados aún")
+    
     db.close()
