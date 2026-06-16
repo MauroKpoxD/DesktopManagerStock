@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/.NET-10-purple">
   <img src="https://img.shields.io/badge/FastAPI-0.100-green">
   <img src="https://img.shields.io/badge/license-APACHE2.0-lightgrey">
-  <img src="https://img.shields.io/badge/version-0.1.1-blue">
+  <img src="https://img.shields.io/badge/version-0.2.0-blue">
 </p>
 
 <!-- Sistema de Stock -->
@@ -43,17 +43,20 @@
   <li>✅ Índices en base de datos para consultas rápidas</li>
   <li>✅ Documentación interactiva automática en /docs</li>
   <li>✅ <strong>Historial de movimientos de stock</strong> (auditoría de entradas/salidas)</li>
+  <li>✅ <strong>Reportes en PDF y Excel</strong> (productos, stock bajo, movimientos)</li>
+  <li>✅ Rate limiting en login y registro (protección contra fuerza bruta)</li>
+  <li>✅ Logging estructurado de eventos de seguridad y operaciones críticas</li>
+  <li>✅ Validación de contraseña fuerte (mayúscula, número, carácter especial)</li>
+  <li>✅ Tests unitarios y de integración (41 tests, 100% de funcionalidades cubiertas)</li>
 </ul>
 
 <!-- Próximas características (en desarrollo) -->
 <h2>⏳ Próximas características (en desarrollo)</h2>
 
 <ul>
-  <li>⏳ Reportes en PDF y Excel (productos, stock bajo, movimientos)</li>
   <li>⏳ Refresh tokens para sesiones más largas sin re-login</li>
-  <li>⏳ Rate limiting en login para prevenir fuerza bruta</li>
-  <li>⏳ Logging estructurado de acciones importantes</li>
-  <li>⏳ Validación de contraseña fuerte en registro</li>
+  <li>⏳ Reportes avanzados (gráficos, resúmenes mensuales)</li>
+  <li>⏳ Integración con frontend .NET (ya en desarrollo)</li>
 </ul>
 
 <hr>
@@ -75,6 +78,8 @@
         <li>FastAPI</li>
         <li>SQLAlchemy</li>
         <li>SQLite</li>
+        <li>ReportLab (PDF)</li>
+        <li>OpenPyXL (Excel)</li>
       </ul>
     </td>
     <td valign="top" width="33%">
@@ -92,9 +97,10 @@
         <li>Visual Studio 2022</li>
         <li>FastAPI /docs</li>
         <li>Docker (opcional)</li>
+        <li>pytest / coverage</li>
       </ul>
     </td>
-  </tr>
+   </tr>
 </table>
 
 <hr>
@@ -137,20 +143,48 @@ dotnet run --project DesktopStock.csproj</code>
 
 <h2>⚙️ Configuración</h2>
 
-<p>Crea un archivo <code>.env</code> en la carpeta <code>backend-python/</code>:</p>
+<p>Crea un archivo <code>.env</code> en la carpeta <code>backend-python/</code> (puedes copiar de <code>.env.example</code>):</p>
 
 <pre>
-<code>DATABASE_URL=sqlite:///./stock.db
+<code># Generar una SECRET_KEY con: python -c "import secrets; print(secrets.token_urlsafe(32))"
+SECRET_KEY=tu_clave_secreta_aqui
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# Base de datos
+DATABASE_URL=sqlite:///./stock.db
 DB_ECHO=False
+RUN_SEEDER=false
+
+# API
 API_HOST=127.0.0.1
 API_PORT=8000
 API_RELOAD=true
-API_VERSION=1.0.0
-SECRET_KEY=token123
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-STOCK_ALERT_THRESHOLD=3</code>
+API_VERSION=0.2.0
+
+# Stock
+STOCK_ALERT_THRESHOLD=5
+
+# CORS
+CORS_ORIGINS=http://localhost:3000
+
+# Rate limiting
+RATE_LIMIT_ENABLED=true
+LOGIN_RATE_LIMIT=5/minute
+REGISTER_RATE_LIMIT=2/minute
+
+# Entorno
+ENVIRONMENT=production
+</code>
 </pre>
+
+<h2>🧪 Tests</h2>
+
+<p>Para ejecutar la suite de pruebas:</p>
+<pre>
+<code>pytest tests/ -v</code>
+</pre>
+<p>Resultado actual: <strong>41 passed, 1 skipped, 2 warnings</strong> (cobertura completa de funcionalidades críticas).</p>
 
 <h2>📡 Documentación de la API</h2>
 

@@ -1,5 +1,5 @@
 """
-ÚLTIMA MODIFICACIÓN: 9/6/2025 por S4NDULOS
+ÚLTIMA MODIFICACIÓN: 12/6/2025 por S4NDULOS
 PROPÓSITO: Fixtures globales para pytest.
 """
 
@@ -8,6 +8,9 @@ import sys
 import pytest
 import tempfile
 import atexit
+
+# Asegurar que el directorio padre (raíz del backend) esté en sys.path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Desactivar rate limiting por completo
 os.environ["RATE_LIMIT_ENABLED"] = "false"
@@ -29,7 +32,9 @@ import app.core.database as database
 from main import app
 from app.core.security import create_access_token, get_password_hash
 from app.models.usuario import UsuarioDB
+from app.models.producto import ProductoDB
 
+# Base de datos temporal
 temp_db_file = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
 temp_db_path = temp_db_file.name
 temp_db_file.close()
@@ -54,6 +59,9 @@ def override_get_db():
 
 app.dependency_overrides[get_db] = override_get_db
 
+# -------------------------------------------------------------------
+# Fixtures
+# -------------------------------------------------------------------
 @pytest.fixture(scope="function", autouse=True)
 def clean_tables():
     with _test_engine.connect() as conn:
@@ -116,3 +124,43 @@ def test_lector(db_session):
 def lector_headers(test_lector):
     access_token = create_access_token(data={"sub": test_lector.username})
     return {"Authorization": f"Bearer {access_token}"}
+
+@pytest.fixture(scope="function")
+def productos_demo(db_session):
+    p1 = ProductoDB(nombre="Producto A", precio=100, stock=10, stock_minimo=5, stock_maximo=50)
+    p2 = ProductoDB(nombre="Producto B", precio=200, stock=2, stock_minimo=5, stock_maximo=30)
+    p3 = ProductoDB(nombre="Producto C", precio=150, stock=20, stock_minimo=10, stock_maximo=100)
+    db_session.add_all([p1, p2, p3])
+    db_session.commit()
+    return [p1, p2, p3]
+
+@pytest.fixture(scope="function")
+def movimientos_demo(db_session, productos_demo, test_user):
+    from app.services.movimiento_service import registrar_movimiento
+    from app.schemas.movimiento import MovimientoBase
+    usuario_id = test_user.id
+    mov1 = MovimientoBase(
+        producto_id=productos_demo[0].id,
+        tipo="entrada",
+        cantidad=5,
+        stock_resultante=15,
+        usuario_id=usuario_id
+    )
+    mov2 = MovimientoBase(
+        producto_id=productos_demo[0].id,
+        tipo="salida",
+        cantidad=3,
+        stock_resultante=12,
+        usuario_id=usuario_id
+    )
+    mov3 = MovimientoBase(
+        producto_id=productos_demo[1].id,
+        tipo="salida",
+        cantidad=1,
+        stock_resultante=1,
+        usuario_id=usuario_id
+    )
+    registrar_movimiento(db_session, mov1)
+    registrar_movimiento(db_session, mov2)
+    registrar_movimiento(db_session, mov3)
+    db_session.commit()
