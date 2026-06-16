@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/.NET-10-purple">
   <img src="https://img.shields.io/badge/FastAPI-0.100-green">
   <img src="https://img.shields.io/badge/license-APACHE2.0-lightgrey">
-  <img src="https://img.shields.io/badge/version-0.2.0-blue">
+  <img src="https://img.shields.io/badge/version-0.2.1-blue">
 </p>
 
 <!-- Sistema de Stock -->
