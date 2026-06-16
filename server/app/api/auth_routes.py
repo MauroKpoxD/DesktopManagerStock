@@ -2,7 +2,7 @@
 ÚLTIMA MODIFICACIÓN: 9/6/2025 por S4NDULOS
 PROPÓSITO: Endpoints de autenticación: registro de usuarios y login con JWT
            Maneja creación de usuarios y generación de tokens de acceso
-           Añadido rate limiting y logging de eventos de seguridad.
+           Añadido rate limiting y logging de eventos de seguridad
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request

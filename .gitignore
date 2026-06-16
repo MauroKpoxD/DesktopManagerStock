@@ -143,4 +143,4 @@ Desktop.ini
 *.cache
 
 # Proyecto cliente C# (todavia no subir nada)
-cliente-csharp/
+client/
