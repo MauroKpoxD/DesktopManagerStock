@@ -146,13 +146,13 @@ python main.py
 # Documentación interactiva: http://localhost:8000/docs</code>
 </pre>
 
-<h3>Frontend (Cliente .NET Windows Forms)</h3>
+<h3>Frontend (Cliente .NET Windows Forms) <span style="background-color: #ffcc00; color: #333; padding: 2px 8px; border-radius: 4px; font-size: 0.7em;">Próximamente</span></h3>
 <pre>
 <code>cd client
 dotnet build
 dotnet run --project DesktopStock.csproj</code>
-# O abre la solución en Visual Studio 2022 y ejecuta.
 </pre>
+<p><del>O abre la solución en Visual Studio 2022 y ejecuta.</del> <strong>Esta sección está en desarrollo activo.</strong></p>
 
 <h2>🐳 Despliegue con Docker</h2>
 
