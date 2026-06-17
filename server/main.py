@@ -1,5 +1,5 @@
 """
-ÚLTIMA MODIFICACIÓN: 12/6/2025 por S4NDULOS
+ÚLTIMA MODIFICACIÓN: 16/6/2025 por S4NDULOS
 PROPÓSITO: Punto de entrada de la API. Crea la app FastAPI,
            inicializa la base de datos (tablas y seeder condicional) mediante lifespan,
            e incluye los routers. Añade CORS y rate limiting condicional
@@ -38,7 +38,10 @@ app = FastAPI(
     title="DesktopManagerStock API",
     version=settings.api_version,
     description="Sistema de gestión de inventario y stock",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/docs" if settings.environment == "development" else None,
+    redoc_url="/redoc" if settings.environment == "development" else None,
+    openapi_url="/openapi.json" if settings.environment == "development" else None,
 )
 
 # CORS
