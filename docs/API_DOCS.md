@@ -27,7 +27,7 @@ Una **API** (Interfaz de Programación de Aplicaciones) es un puente que permite
 
 ## 2. Preparando el Proyecto WinForms
 
-1. Abre Visual Studio y crea un nuevo proyecto **Windows Forms App (.NET Framework o .NET)**.
+1. Abre Visual Studio y crea un nuevo proyecto **Windows Forms App (.NET Framework o .NET 10)**.
 2. Agrega el paquete **Newtonsoft.Json** desde NuGet (herramientas → Administrador de paquetes NuGet → Buscar `Newtonsoft.Json` e instalar). Es el estándar para trabajar con JSON en .NET.
 
 ---
@@ -187,12 +187,53 @@ public class ApiService
 
 ## 7. Ejemplo Práctico con la API de Stock
 
-Aplicamos los conceptos a la API `DesktopManagerStock`. Suponiendo que ya tienes los **modelos** (Producto, Movimiento, etc.) que vimos antes.
+Aplicamos los conceptos a la API `DesktopManagerStock`. La URL base de la API es `http://127.0.0.1:8000` por defecto, y todos los endpoints están prefijados con `/api/v1`.
+
+### Modelos de ejemplo (DTOs)
+
+```csharp
+public class Producto
+{
+    public int id { get; set; }
+    public string nombre { get; set; }
+    public float precio { get; set; }
+    public int stock { get; set; }
+    public int stock_minimo { get; set; }
+    public int stock_maximo { get; set; }
+}
+
+public class ProductoCreate
+{
+    public string nombre { get; set; }
+    public float precio { get; set; }
+    public int stock { get; set; }
+    public int? stock_minimo { get; set; }
+    public int? stock_maximo { get; set; }
+}
+
+public class Movimiento
+{
+    public int id { get; set; }
+    public int producto_id { get; set; }
+    public string tipo { get; set; } // "entrada" o "salida"
+    public int cantidad { get; set; }
+    public int stock_resultante { get; set; }
+    public int? usuario_id { get; set; }
+    public DateTime fecha_hora { get; set; }
+}
+
+public class LoginResponse
+{
+    public string access_token { get; set; }
+    public string token_type { get; set; }
+}
+```
 
 ### Login y guardado del token
 ```csharp
 public async Task<LoginResponse> LoginAsync(string username, string password)
 {
+    // El endpoint de login espera datos en formato form-urlencoded
     var content = new FormUrlEncodedContent(new[]
     {
         new KeyValuePair<string, string>("username", username),
@@ -208,11 +249,11 @@ public async Task<LoginResponse> LoginAsync(string username, string password)
 }
 ```
 
-### Obtener lista de productos
+### Obtener lista de productos (con paginación)
 ```csharp
-public async Task<List<Producto>> GetProductosAsync()
+public async Task<List<Producto>> GetProductosAsync(int skip = 0, int limit = 100)
 {
-    return await GetAsync<List<Producto>>("/api/v1/productos");
+    return await GetAsync<List<Producto>>($"/api/v1/productos?skip={skip}&limit={limit}");
 }
 ```
 
@@ -230,6 +271,17 @@ public async Task<string> AjustarStockAsync(int productoId, int cantidad, string
 {
     var endpoint = $"/api/v1/productos/{productoId}/stock?cantidad={cantidad}&tipo={tipo}";
     return await PatchAsync<string>(endpoint, null);
+}
+```
+
+### Obtener movimientos de stock
+```csharp
+public async Task<List<Movimiento>> GetMovimientosAsync(int productoId = 0, int skip = 0, int limit = 100)
+{
+    var endpoint = $"/api/v1/movimientos?skip={skip}&limit={limit}";
+    if (productoId > 0)
+        endpoint += $"&producto_id={productoId}";
+    return await GetAsync<List<Movimiento>>(endpoint);
 }
 ```
 
@@ -297,7 +349,20 @@ if (!string.IsNullOrEmpty(token))
 
 ---
 
-## 10. Buenas Prácticas Finales
+## 10. Scripts de Automatización para el Backend
+
+El proyecto incluye scripts para facilitar el despliegue y la ejecución del backend en diferentes sistemas:
+
+| Script | Sistema | Descripción |
+|--------|---------|-------------|
+| `scripts/deploy_api.sh` | Linux / macOS | Despliegue completo con Docker (instala dependencias, clona, configura y levanta) |
+| `scripts/levantar_servicio_python.bash` | Linux / macOS | Levanta el servidor directamente sin Docker (modo desarrollo) |
+| `scripts/levantar_docker.ps1` | Windows PowerShell | Levanta el contenedor con docker-compose |
+| `scripts/levantar_servicio.ps1` | Windows PowerShell | Levanta el servidor directamente sin Docker (modo desarrollo) |
+
+---
+
+## 11. Buenas Prácticas Finales
 
 | Práctica | Por qué |
 |----------|---------|
@@ -307,3 +372,4 @@ if (!string.IsNullOrEmpty(token))
 | Separar en capas (Models, Services, Forms) | Código más limpio, testeable y mantenible. |
 | Validar entrada antes de enviar a la API | Reduce errores y carga innecesaria. |
 | Mostrar mensajes de error concretos | Mejor experiencia de usuario. |
+| Configurar la URL base desde un archivo de configuración | Facilita el cambio entre entornos (desarrollo, pruebas, producción). |
