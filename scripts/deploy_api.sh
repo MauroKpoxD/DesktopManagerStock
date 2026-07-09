@@ -77,20 +77,34 @@ else
 fi
 
 # ------------------------------------------------------------
-# 4. Configurar variables de entorno (.env)
+# 4. Configurar variables de entorno (.env) para Docker
 # ------------------------------------------------------------
 cd "$PROJECT_DIR/server"
 
 if [ ! -f ".env" ]; then
     log_info "Creando .env desde .env.example..."
     cp .env.example .env
+
     # Generar SECRET_KEY segura
     SECRET=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
     sed -i "s/^SECRET_KEY=.*/SECRET_KEY=$SECRET/" .env
-    # Ajustar para que escuche en todas las interfaces
+
+    # Generar contraseña para PostgreSQL (aleatoria)
+    DB_PASS=$(openssl rand -base64 18 | tr -dc 'a-zA-Z0-9')
+    sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=$DB_PASS/" .env
+
+    # Ajustar DB_HOST para que apunte al contenedor 'db'
+    sed -i 's/^DB_HOST=.*/DB_HOST=db/' .env
+
+    # Ajustar API_HOST para escuchar en todas las interfaces
     sed -i 's/^API_HOST=.*/API_HOST=0.0.0.0/' .env
+
     # Desactivar rate limiting en desarrollo (opcional)
     sed -i 's/^RATE_LIMIT_ENABLED=.*/RATE_LIMIT_ENABLED=false/' .env
+
+    # Cambiar ENVIRONMENT a production (por defecto)
+    sed -i 's/^ENVIRONMENT=.*/ENVIRONMENT=production/' .env
+
     log_info ".env configurado correctamente."
 else
     log_info ".env ya existe. No se modifica."

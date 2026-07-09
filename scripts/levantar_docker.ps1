@@ -1,6 +1,6 @@
-# levantar_servicio.ps1
-# Levanta el servidor directamente con uvicorn usando el entorno virtual
-# Uso: .\scripts\levantar_servicio.ps1
+# levantar_docker.ps1
+# Levanta el servidor con Docker usando docker-compose
+# Uso: .\scripts\levantar_docker.ps1
 
 # Cambiar al directorio raiz del proyecto
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -12,56 +12,52 @@ if (-not (Test-Path -Path "server")) {
     exit 1
 }
 
-# Verificar que existe el entorno virtual
-if (-not (Test-Path -Path "venv")) {
-    Write-Host "INFO: No se encontro el entorno virtual 'venv'. Creandolo..." -ForegroundColor Yellow
-    python -m venv venv
-    Write-Host "INFO: Entorno virtual creado." -ForegroundColor Green
+# Verificar que Docker está instalado
+if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+    Write-Host "ERROR: Docker no está instalado o no está en el PATH." -ForegroundColor Red
+    exit 1
 }
 
-# Activar el entorno virtual
-& .\venv\Scripts\Activate.ps1
-
-# Instalar dependencias si es necesario (comprobacion rapida)
-$fastapi = pip show fastapi 2>$null
-if (-not $fastapi) {
-    Write-Host "INFO: Instalando dependencias desde server\requirements.txt..." -ForegroundColor Cyan
-    pip install -r server\requirements.txt
+# Verificar que docker-compose funciona
+try {
+    docker compose version | Out-Null
+} catch {
+    Write-Host "ERROR: docker-compose no está disponible. Asegúrate de tener Docker Desktop instalado." -ForegroundColor Red
+    exit 1
 }
 
-# Crear directorio logs si no existe
-if (-not (Test-Path -Path "server\logs")) {
-    Write-Host "INFO: Creando directorio server\logs..." -ForegroundColor Cyan
-    New-Item -ItemType Directory -Path "server\logs" -Force | Out-Null
-}
-
-# Cargar variables de entorno desde server\.env (si existe) o server\.env.example
+# Verificar si existe el archivo .env
 $envFile = "server\.env"
 if (-not (Test-Path -Path $envFile)) {
-    Write-Host "WARNING: No se encontro $envFile. Usando server\.env.example como base." -ForegroundColor Yellow
-    $envFile = "server\.env.example"
-}
+    Write-Host "INFO: No se encontro $envFile. Creando desde .env.example..." -ForegroundColor Yellow
+    Copy-Item "server\.env.example" -Destination $envFile
 
-if (Test-Path -Path $envFile) {
-    Get-Content -Path $envFile | ForEach-Object {
-        if ($_ -match '^([^=]+)=(.*)$') {
-            $nombre = $matches[1].Trim()
-            $valor = $matches[2].Trim()
-            # Remover comillas si existen
-            if ($valor -match '^"(.*)"$' -or $valor -match "^'(.*)'$") {
-                $valor = $matches[1]
-            }
-            Set-Item -Path "Env:$nombre" -Value $valor
-        }
+    # Generar SECRET_KEY con Python
+    $secret = python -c "import secrets; print(secrets.token_urlsafe(32))" 2>$null
+    if ($secret) {
+        (Get-Content $envFile) -replace '^SECRET_KEY=.*', "SECRET_KEY=$secret" | Set-Content $envFile
     }
-    Write-Host "INFO: Variables de entorno cargadas desde $envFile" -ForegroundColor Green
+
+    # Generar contraseña para PostgreSQL
+    $dbpass = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 18 | ForEach-Object { [char]$_ })
+    (Get-Content $envFile) -replace '^DB_PASSWORD=.*', "DB_PASSWORD=$dbpass" | Set-Content $envFile
+
+    # Cambiar DB_HOST a 'db' (nombre del servicio en docker-compose)
+    (Get-Content $envFile) -replace '^DB_HOST=.*', 'DB_HOST=db' | Set-Content $envFile
+
+    Write-Host "INFO: .env creado con valores generados." -ForegroundColor Green
+} else {
+    Write-Host "INFO: .env ya existe. Usando configuración existente." -ForegroundColor Green
 }
 
-# Definir valores por defecto si no estan cargados
-if (-not $env:API_HOST) { $env:API_HOST = "127.0.0.1" }
-if (-not $env:API_PORT) { $env:API_PORT = "8000" }
-
-# Ir a la carpeta server y ejecutar
-Write-Host "INFO: Iniciando el servidor en http://$env:API_HOST`:$env:API_PORT" -ForegroundColor Green
+# Levantar los contenedores
+Write-Host "INFO: Construyendo y levantando contenedores con docker-compose..." -ForegroundColor Cyan
 Set-Location -Path "server"
-python main.py
+docker compose up -d --build
+
+# Mostrar estado
+Write-Host "`nINFO: Estado de los contenedores:" -ForegroundColor Green
+docker compose ps
+
+Write-Host "`nINFO: Logs en tiempo real (Ctrl+C para salir sin detener):" -ForegroundColor Yellow
+docker compose logs -f

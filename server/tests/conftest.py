@@ -45,13 +45,13 @@ from app.core.database import Base, get_db
 from app.models.usuario import UsuarioDB
 from app.models.producto import ProductoDB
 from app.models.movimiento import MovimientoDB
-from app.models.refresh_token import RefreshTokenDB  # <-- CRUCIAL
+from app.models.refresh_token import RefreshTokenDB
 
 # ============================================================
 # 5. Crear motor SQLite y sobrescribir el engine global
 # ============================================================
 import app.core.database as database
-from sqlalchemy import create_engine, text  # <-- Importar text para PRAGMA
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 temp_db_file = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
