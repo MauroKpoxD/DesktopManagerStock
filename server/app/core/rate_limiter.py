@@ -1,9 +1,6 @@
 """
-ÚLTIMA MODIFICACIÓN: 11/6/2025 por S4NDULOS
-PROPÓSITO: Configuración centralizada del rate limiter para toda la aplicación
-           Soporta desactivación condicional (rate_limit_enabled=false) devolviendo un decorador nulo
+Configuración de rate limiter condicional.
 """
-
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from app.core.config import settings
@@ -17,7 +14,6 @@ class ConditionalLimiter:
         if self._enabled:
             return self._limiter.limit(*args, **kwargs)
         else:
-            # Decorador nulo: retorna la función original sin modificar
             def decorator(func):
                 return func
             return decorator

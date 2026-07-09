@@ -1,10 +1,6 @@
 """
-ÚLTIMA MODIFICACIÓN: 16/6/2025 por S4NDULOS
-PROPÓSITO: Punto de entrada de la API. Crea la app FastAPI,
-           inicializa la base de datos (tablas y seeder condicional) mediante lifespan,
-           e incluye los routers. Añade CORS y rate limiting condicional
+Punto de entrada de la API.
 """
-
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,23 +11,23 @@ from app.api.auth_routes import router as auth_router
 from app.api.reportes_routes import router as reportes_router
 from app.core.database import engine, Base, init_db
 from app.core.config import settings
-from app.core.logging_config import setup_logging
+from app.core.logging_config import get_logger
 from app.core.rate_limiter import limiter
 
-# Importar los modelos para que SQLAlchemy los detecte
+# Importar modelos para que SQLAlchemy los detecte
+from app.models.refresh_token import RefreshTokenDB
 from app.models.producto import ProductoDB
 from app.models.usuario import UsuarioDB
 from app.models.movimiento import MovimientoDB
 
-# Configurar logging
-logger = setup_logging()
+logger = get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
-    init_db()  # Siempre inicializa (crea admin si no existe)
+    init_db()
     if settings.run_seeder:
-        logger.info("Seeder adicional activado (run_seeder=True) - pendiente de implementar datos demo")
+        logger.info("Seeder adicional activado (run_seeder=True)")
     yield
 
 app = FastAPI(
@@ -54,18 +50,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Rate limiting condicional
+# Rate limiting
 if settings.rate_limit_enabled:
-    app.state.limiter = limiter._limiter  # acceder al limiter real
+    app.state.limiter = limiter._limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     logger.info("Rate limiting activado")
 else:
     logger.info("Rate limiting desactivado")
 
-# Incluir routers
-app.include_router(router)          # endpoints del sistema de stock
-app.include_router(auth_router)     # auth
-app.include_router(reportes_router) # reportes
+# Routers
+app.include_router(router)
+app.include_router(auth_router)
+app.include_router(reportes_router)
 
 if __name__ == "__main__":
     import uvicorn

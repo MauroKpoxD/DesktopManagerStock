@@ -1,10 +1,7 @@
 """
-ÚLTIMA MODIFICACIÓN: 3/6/2025 por S4NDULOS
-PROPÓSITO: Modelo SQLAlchemy para la tabla 'movimientos'
-           Registra cada entrada/salida de stock para auditoría
+Modelo de Movimiento (historial de stock).
 """
-
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Index
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Index
 from sqlalchemy.sql import func
 from app.core.database import Base
 
@@ -13,7 +10,7 @@ class MovimientoDB(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     producto_id = Column(Integer, ForeignKey("productos.id", ondelete="CASCADE"), nullable=False, index=True)
-    tipo = Column(String, nullable=False) # entrada o salida
+    tipo = Column(String, nullable=False)
     cantidad = Column(Integer, nullable=False)
     stock_resultante = Column(Integer, nullable=False)
     usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True, index=True)

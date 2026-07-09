@@ -1,9 +1,6 @@
 """
-ÚLTIMA MODIFICACIÓN: 3/6/2025 por S4NDULOS
-PROPÓSITO: Define los roles disponibles (admin, editor, lector) y una dependencia
-           reutilizable para verificar permisos en los endpoints.
+Definición de roles y dependencia de autorización.
 """
-
 from enum import Enum
 from fastapi import Depends, HTTPException, status
 from app.models.usuario import UsuarioDB
@@ -15,10 +12,6 @@ class Rol(str, Enum):
     LECTOR = "lector"
 
 def require_roles(allowed_roles: list[Rol]):
-    """
-    Fabrica de dependencias que verifica si el usuario autenticado
-    posee alguno de los roles permitidos
-    """
     def dependency(current_user: UsuarioDB = Depends(get_current_active_user)):
         if current_user.rol not in [r.value for r in allowed_roles]:
             raise HTTPException(

@@ -1,17 +1,15 @@
 """
-ÚLTIMA MODIFICACIÓN: 9/6/2025 por S4NDULOS
-PROPÓSITO: Tests para el servicio y endpoints de movimientos de stock
+Tests para el servicio y endpoints de movimientos de stock.
 """
-
 import pytest
 from app.services.movimiento_service import (
     registrar_movimiento,
-    get_movimiento_by_id,
-    get_movimientos,
-    get_movimientos_por_rango_ids
+    obtener_movimiento_por_id,
+    listar_movimientos,
+    obtener_movimientos_por_rango_ids
 )
 from app.schemas.movimiento import MovimientoBase
-from app.services.producto_service import create_producto, ajustar_stock
+from app.services.producto_service import crear_producto, ajustar_stock
 from app.schemas.producto import ProductoCreate
 from app.models.usuario import UsuarioDB
 from app.core.security import get_password_hash
@@ -21,7 +19,7 @@ from app.core.security import get_password_hash
 # ------------------------------------------------------------------------------
 
 def test_registrar_movimiento(db_session):
-    producto = create_producto(db_session, ProductoCreate(nombre="ProdMov", precio=10, stock=5))
+    producto = crear_producto(db_session, ProductoCreate(nombre="ProdMov", precio=10, stock=5))
     user = UsuarioDB(
         username="movuser",
         email="mov@test.com",
@@ -49,8 +47,8 @@ def test_registrar_movimiento(db_session):
     assert mov.usuario_id == user.id
     assert mov.fecha_hora is not None
 
-def test_get_movimiento_by_id(db_session):
-    producto = create_producto(db_session, ProductoCreate(nombre="ProdGet", precio=20, stock=0))
+def test_obtener_movimiento_por_id(db_session):
+    producto = crear_producto(db_session, ProductoCreate(nombre="ProdGet", precio=20, stock=0))
     user = UsuarioDB(
         username="getuser",
         email="get@test.com",
@@ -70,13 +68,14 @@ def test_get_movimiento_by_id(db_session):
         usuario_id=user.id
     )
     mov = registrar_movimiento(db_session, mov_data_entrada)
-    obtenido = get_movimiento_by_id(db_session, mov.id)
+    obtenido = obtener_movimiento_por_id(db_session, mov.id)
     assert obtenido is not None
     assert obtenido.id == mov.id
-    assert get_movimiento_by_id(db_session, 99999) is None
+    with pytest.raises(Exception):  # NotFoundError
+        obtener_movimiento_por_id(db_session, 99999)
 
-def test_get_movimientos(db_session):
-    producto = create_producto(db_session, ProductoCreate(nombre="ProdList", precio=30, stock=10))
+def test_listar_movimientos(db_session):
+    producto = crear_producto(db_session, ProductoCreate(nombre="ProdList", precio=30, stock=10))
     user = UsuarioDB(
         username="listuser",
         email="list@test.com",
@@ -98,20 +97,20 @@ def test_get_movimientos(db_session):
         )
         registrar_movimiento(db_session, mov_data)
 
-    todos = get_movimientos(db_session)
+    todos = listar_movimientos(db_session)
     assert len(todos) == 3
 
-    primeros = get_movimientos(db_session, skip=0, limit=2)
+    primeros = listar_movimientos(db_session, skip=0, limit=2)
     assert len(primeros) == 2
 
-    filtrados = get_movimientos(db_session, producto_id=producto.id)
+    filtrados = listar_movimientos(db_session, producto_id=producto.id)
     assert len(filtrados) == 3
 
-    solo_entradas = get_movimientos(db_session, tipo="entrada")
+    solo_entradas = listar_movimientos(db_session, tipo="entrada")
     assert len(solo_entradas) == 2
 
-def test_get_movimientos_por_rango_ids(db_session):
-    producto = create_producto(db_session, ProductoCreate(nombre="ProdRango", precio=40, stock=15))
+def test_obtener_movimientos_por_rango_ids(db_session):
+    producto = crear_producto(db_session, ProductoCreate(nombre="ProdRango", precio=40, stock=15))
     user = UsuarioDB(
         username="rangouser",
         email="rango@test.com",
@@ -135,7 +134,7 @@ def test_get_movimientos_por_rango_ids(db_session):
         mov = registrar_movimiento(db_session, mov_data)
         ids.append(mov.id)
 
-    rango = get_movimientos_por_rango_ids(db_session, ids[1], ids[3])
+    rango = obtener_movimientos_por_rango_ids(db_session, ids[1], ids[3])
     assert len(rango) == 3
     assert rango[0].id == ids[1]
     assert rango[-1].id == ids[3]
@@ -145,7 +144,7 @@ def test_get_movimientos_por_rango_ids(db_session):
 # ------------------------------------------------------------------------------
 
 def test_ajustar_stock_registra_movimiento(db_session):
-    producto = create_producto(db_session, ProductoCreate(nombre="StockTest", precio=50, stock=10, stock_maximo=20))
+    producto = crear_producto(db_session, ProductoCreate(nombre="StockTest", precio=50, stock=10, stock_maximo=20))
     user = UsuarioDB(
         username="ajustador",
         email="ajusta@test.com",
@@ -159,7 +158,7 @@ def test_ajustar_stock_registra_movimiento(db_session):
 
     ajustar_stock(db_session, producto.id, 5, es_entrada=True, usuario_id=user.id)
 
-    movimientos = get_movimientos(db_session, producto_id=producto.id)
+    movimientos = listar_movimientos(db_session, producto_id=producto.id)
     assert len(movimientos) == 1
     mov = movimientos[0]
     assert mov.tipo == "entrada"
@@ -168,7 +167,7 @@ def test_ajustar_stock_registra_movimiento(db_session):
     assert mov.usuario_id == user.id
 
     ajustar_stock(db_session, producto.id, 3, es_entrada=False, usuario_id=user.id)
-    movimientos = get_movimientos(db_session, producto_id=producto.id)
+    movimientos = listar_movimientos(db_session, producto_id=producto.id)
     assert len(movimientos) == 2
     mov_salida = movimientos[0]
     assert mov_salida.tipo == "salida"
@@ -180,7 +179,7 @@ def test_ajustar_stock_registra_movimiento(db_session):
 # ------------------------------------------------------------------------------
 
 def test_endpoint_listar_movimientos(client, auth_headers, db_session):
-    producto = create_producto(db_session, ProductoCreate(nombre="EndpointProd", precio=60, stock=5))
+    producto = crear_producto(db_session, ProductoCreate(nombre="EndpointProd", precio=60, stock=5))
     from app.models.usuario import UsuarioDB
     user = db_session.query(UsuarioDB).filter(UsuarioDB.username == "testuser").first()
     assert user is not None
@@ -199,10 +198,10 @@ def test_endpoint_listar_movimientos(client, auth_headers, db_session):
     assert "stock_resultante" in data[0]
 
 def test_endpoint_obtener_movimiento_por_id(client, auth_headers, db_session):
-    producto = create_producto(db_session, ProductoCreate(nombre="GetByIdProd", precio=70, stock=8))
+    producto = crear_producto(db_session, ProductoCreate(nombre="GetByIdProd", precio=70, stock=8))
     user = db_session.query(UsuarioDB).filter(UsuarioDB.username == "testuser").first()
     ajustar_stock(db_session, producto.id, 3, es_entrada=True, usuario_id=user.id)
-    movimientos = get_movimientos(db_session, producto_id=producto.id)
+    movimientos = listar_movimientos(db_session, producto_id=producto.id)
     mov_id = movimientos[0].id
 
     response = client.get(f"/api/v1/movimientos/{mov_id}", headers=auth_headers)
@@ -215,12 +214,12 @@ def test_endpoint_obtener_movimiento_por_id(client, auth_headers, db_session):
     assert response.status_code == 404
 
 def test_endpoint_movimientos_rango_ids(client, auth_headers, db_session):
-    producto = create_producto(db_session, ProductoCreate(nombre="RangoProd", precio=80, stock=0))
+    producto = crear_producto(db_session, ProductoCreate(nombre="RangoProd", precio=80, stock=0))
     user = db_session.query(UsuarioDB).filter(UsuarioDB.username == "testuser").first()
     ids = []
     for i in range(3):
         ajustar_stock(db_session, producto.id, 1, es_entrada=True, usuario_id=user.id)
-        movimientos = get_movimientos(db_session, producto_id=producto.id)
+        movimientos = listar_movimientos(db_session, producto_id=producto.id)
         ids.append(movimientos[0].id)
 
     desde, hasta = ids[0], ids[2]
@@ -233,8 +232,6 @@ def test_endpoint_movimientos_rango_ids(client, auth_headers, db_session):
 
     response = client.get(f"/api/v1/movimientos/range?desde={hasta}&hasta={desde}", headers=auth_headers)
     assert response.status_code == 400
-
-# -------------------- NUEVOS TESTS --------------------
 
 def test_movimientos_range_limit_exceeded(client, auth_headers):
     response = client.get("/api/v1/movimientos/range?desde=1&hasta=1001", headers=auth_headers)

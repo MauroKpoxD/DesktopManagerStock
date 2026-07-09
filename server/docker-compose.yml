@@ -5,15 +5,18 @@ services:
     ports:
       - "${API_PORT}:${API_PORT}"
     volumes:
-      - ./stock.db:/app/stock.db
       - ./logs:/app/logs
+      - ./reports:/app/reports
+      - ./usuarios:/app/usuarios
     env_file:
       - .env
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
-    user: "1000:1000"  # Reemplaza con tu UID:GID (ejecuta 'id -u' y 'id -g' en el host)
-    # command: uvicorn main:app --host 0.0.0.0 --port ${API_PORT}
+    user: "1000:1000"  # Reemplaza con tu UID:GID
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${API_PORT}/api/v1/"]
+      test: ["CMD", "python", "-c", "import urllib.request, os, sys; sys.exit(0 if urllib.request.urlopen(f'http://localhost:{os.environ[\"API_PORT\"]}/api/v1/').getcode() == 200 else 1)"]
       interval: 30s
       timeout: 5s
       retries: 3
