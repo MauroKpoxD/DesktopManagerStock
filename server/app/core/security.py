@@ -1,10 +1,7 @@
 """
-ÚLTIMA MODIFICACIÓN: 28/5/2025 por S4NDULOS
-PROPÓSITO: Funciones de hashing (bcrypt), generación/validación de JWT,
-           y dependencias para obtener usuario autenticado
+Funciones de hash, JWT y dependencias de autenticación.
 """
-
-from datetime import datetime, timedelta, timezone   
+from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from app.core.database import get_db
@@ -15,10 +12,6 @@ from app.core.config import settings
 from app.models.usuario import UsuarioDB
 from app.schemas.usuario import TokenData
 
-# -------------------------------------------------------------------
-# HASHING DE CONTRASEÑAS
-# -------------------------------------------------------------------
-
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 def verify_password(plain_password, hashed_password):
@@ -26,10 +19,6 @@ def verify_password(plain_password, hashed_password):
 
 def get_password_hash(password):
     return pwd_context.hash(password)
-
-# -------------------------------------------------------------------
-# AUTENTICACIÓN Y TOKENS JWT
-# -------------------------------------------------------------------
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
@@ -41,13 +30,9 @@ def authenticate_user(db: Session, username: str, password: str):
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta   
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)  
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=settings.access_token_expire_minutes))
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
-    return encoded_jwt
+    return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
 
 def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(

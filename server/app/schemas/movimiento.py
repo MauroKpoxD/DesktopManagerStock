@@ -1,8 +1,6 @@
 """
-ÚLTIMA MODIFICACIÓN: 3/6/2025 por S4NDULOS
-PROPÓSITO: Schemas Pydantic para movimientos de stock
+Esquemas de Movimiento.
 """
-
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional
@@ -17,5 +15,4 @@ class MovimientoBase(BaseModel):
 class Movimiento(MovimientoBase):
     id: int
     fecha_hora: datetime
-
     model_config = ConfigDict(from_attributes=True)

@@ -1,10 +1,8 @@
 """
-ULTIMA MODIFICACION HECHA POR S4NDULOS 9/6/2025
-TEST PARA USUARIOS Y ENDPOINTS DE PRODUCTOS
+Tests para endpoints de productos.
 """
-
 import pytest
-from app.services.producto_service import create_producto
+from app.services.producto_service import crear_producto
 from app.schemas.producto import ProductoCreate
 
 def test_get_productos_empty(client, auth_headers):
@@ -31,24 +29,22 @@ def test_create_producto_unauthorized(client, db_session, test_user):
     assert response.status_code == 401
 
 def test_ajustar_stock(client, auth_headers, db_session):
-    producto = create_producto(db_session, ProductoCreate(nombre="Parlante", precio=80, stock=5))
+    producto = crear_producto(db_session, ProductoCreate(nombre="Parlante", precio=80, stock=5))
     response = client.patch(f"/api/v1/productos/{producto.id}/stock?cantidad=3&tipo=entrada", headers=auth_headers)
     assert response.status_code == 200
     assert response.json()["mensaje"] == "Stock actualizado. Nuevo stock: 8"
     db_session.commit()
-    from app.services.producto_service import get_producto_by_id
-    updated = get_producto_by_id(db_session, producto.id)
+    from app.services.producto_service import obtener_producto_por_id
+    updated = obtener_producto_por_id(db_session, producto.id)
     assert updated.stock == 8
 
 def test_rol_admin_required_for_delete(client, auth_headers, db_session, test_user):
-    producto = create_producto(db_session, ProductoCreate(nombre="Borrar", precio=1, stock=1))
+    producto = crear_producto(db_session, ProductoCreate(nombre="Borrar", precio=1, stock=1))
     response = client.delete(f"/api/v1/productos/{producto.id}", headers=auth_headers)
     assert response.status_code == 403
 
-# -------------------- NUEVOS TESTS --------------------
-
 def test_editor_can_update_producto(client, auth_headers, db_session):
-    producto = create_producto(db_session, ProductoCreate(nombre="EditorTest", precio=100, stock=5))
+    producto = crear_producto(db_session, ProductoCreate(nombre="EditorTest", precio=100, stock=5))
     payload = {"precio": 150}
     response = client.put(f"/api/v1/productos/{producto.id}", json=payload, headers=auth_headers)
     assert response.status_code == 200
@@ -60,28 +56,28 @@ def test_lector_cannot_create_producto(client, lector_headers, db_session):
     assert response.status_code == 403
 
 def test_lector_cannot_update_producto(client, lector_headers, db_session):
-    producto = create_producto(db_session, ProductoCreate(nombre="LectorActualizar", precio=100, stock=2))
+    producto = crear_producto(db_session, ProductoCreate(nombre="LectorActualizar", precio=100, stock=2))
     response = client.put(f"/api/v1/productos/{producto.id}", json={"precio": 200}, headers=lector_headers)
     assert response.status_code == 403
 
 def test_lector_cannot_delete_producto(client, lector_headers, db_session):
-    producto = create_producto(db_session, ProductoCreate(nombre="LectorBorrar", precio=100, stock=2))
+    producto = crear_producto(db_session, ProductoCreate(nombre="LectorBorrar", precio=100, stock=2))
     response = client.delete(f"/api/v1/productos/{producto.id}", headers=lector_headers)
     assert response.status_code == 403
 
 def test_put_producto_no_modifica_stock(client, auth_headers, db_session):
-    producto = create_producto(db_session, ProductoCreate(nombre="StockFijo", precio=50, stock=10))
+    producto = crear_producto(db_session, ProductoCreate(nombre="StockFijo", precio=50, stock=10))
     payload = {"stock": 99}
     response = client.put(f"/api/v1/productos/{producto.id}", json=payload, headers=auth_headers)
     assert response.status_code == 200
     assert response.json()["stock"] == 10
-    from app.services.producto_service import get_producto_by_id
-    updated = get_producto_by_id(db_session, producto.id)
+    from app.services.producto_service import obtener_producto_por_id
+    updated = obtener_producto_por_id(db_session, producto.id)
     assert updated.stock == 10
 
 def test_get_productos_stock_bajo_endpoint(client, auth_headers, db_session):
-    create_producto(db_session, ProductoCreate(nombre="Bajo", precio=1, stock=2, stock_minimo=5))
-    create_producto(db_session, ProductoCreate(nombre="Normal", precio=1, stock=10, stock_minimo=5))
+    crear_producto(db_session, ProductoCreate(nombre="Bajo", precio=1, stock=2, stock_minimo=5))
+    crear_producto(db_session, ProductoCreate(nombre="Normal", precio=1, stock=10, stock_minimo=5))
     response = client.get("/api/v1/productos/stock/bajo", headers=auth_headers)
     assert response.status_code == 200
     data = response.json()

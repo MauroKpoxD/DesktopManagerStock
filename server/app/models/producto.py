@@ -1,10 +1,6 @@
 """
-ÚLTIMA MODIFICACIÓN: 3/6/2025 por S4NDULOS
-PROPÓSITO: Modelo SQLAlchemy para la tabla 'productos'
-           Define campos: id, nombre, precio, stock, stock_minimo, stock_maximo
-           Agregado índice en stock para mejorar consultas de stock bajo.
+Modelo de Producto.
 """
-
 from sqlalchemy import Column, Integer, String, Float, Index
 from app.core.database import Base
 

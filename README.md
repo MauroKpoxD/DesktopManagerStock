@@ -3,12 +3,12 @@
 </h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.11-blue">
-  <img src="https://img.shields.io/badge/.NET-10-purple">
-  <img src="https://img.shields.io/badge/FastAPI-0.136-green">
-  <img src="https://img.shields.io/badge/license-APACHE2.0-lightgrey">
-  <img src="https://img.shields.io/badge/version-0.3.1-blue">
-  <img src="https://img.shields.io/badge/Docker-Ready-blue">
+  <img src="https://img.shields.io/badge/Python-3.11-blue?style=for-the-badge&logo=python&logoColor=white">
+  <img src="https://img.shields.io/badge/.NET_MAUI-10-purple?style=for-the-badge&logo=dotnet&logoColor=white">
+  <img src="https://img.shields.io/badge/FastAPI-0.136-green?style=for-the-badge&logo=fastapi&logoColor=white">
+  <img src="https://img.shields.io/badge/license-APACHE2.0-lightgrey?style=for-the-badge">
+  <img src="https://img.shields.io/badge/version-0.3.2-blue?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Docker-Ready-blue?style=for-the-badge&logo=docker&logoColor=white">
 </p>
 
 <!-- Sistema de Stock -->
@@ -18,53 +18,120 @@
 
 <p align="center">
   <b>Sistema de gestión de inventario y stock para escritorio</b><br>
-  desarrollado con <b>Python</b> (backend API) + <b>.NET 10</b> (frontend Windows Forms).
+  desarrollado con <b>Python</b> (backend API) + <b>.NET MAUI</b> (frontend multiplataforma).
 </p>
 
-<hr>
+<!-- Separador decorativo -->
+<hr style="border: 2px solid #6c63ff; border-radius: 5px;">
 
-<!-- Lenguajes -->
-<h2 align="center">Lenguajes utilizados</h2>
+<!-- Tecnologías y lenguajes -->
+<h2 align="center">🚀 Tecnologías y lenguajes</h2>
+
 <p align="center">
-  <img src="assets/cartel_lenguajes_usados.png" width="750">
+  <strong>desarrollado con</strong> 
+  <img src="https://img.shields.io/badge/Python-Backend_API-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
+  <strong>+</strong>
+  <img src="https://img.shields.io/badge/.NET_MAUI-Frontend_Multiplataforma-512BD4?style=flat-square&logo=dotnet&logoColor=white" alt=".NET MAUI">
 </p>
 
-<hr>
+<br>
 
-<!-- Características implementadas -->
-<h2>✅ Características (implementadas)</h2>
+<div align="center">
+  <table>
+    <tr>
+      <td align="center" width="120" style="border: none; padding: 10px;">
+        <img src="https://cdn.simpleicons.org/python/3776AB" width="48"><br>
+        <strong>Python</strong><br>
+        <small>Backend API</small>
+      </td>
+      <td align="center" width="120" style="border: none; padding: 10px;">
+        <img src="https://cdn.simpleicons.org/html5/E34F26" width="48"><br>
+        <strong>HTML5</strong><br>
+        <small>Estructura</small>
+      </td>
+      <td align="center" width="120" style="border: none; padding: 10px;">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg" width="48"><br>
+        <strong>CSS3</strong><br>
+        <small>Estilos</small>
+      </td>
+      <td align="center" width="120" style="border: none; padding: 10px;">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg" width="48"><br>
+        <strong>C#</strong><br>
+        <small>.NET MAUI</small>
+      </td>
+      <td align="center" width="120" style="border: none; padding: 10px;">
+        <img src="https://cdn.simpleicons.org/dotnet/512BD4" width="48"><br>
+        <strong>.NET MAUI</strong><br>
+        <small>Multiplataforma</small>
+      </td>
+      <td align="center" width="120" style="border: none; padding: 10px;">
+        <img src="https://cdn.simpleicons.org/postgresql/4169E1" width="48"><br>
+        <strong>PostgreSQL</strong><br>
+        <small>Base de datos</small>
+      </td>
+      <td align="center" width="120" style="border: none; padding: 10px;">
+        <img src="https://cdn.simpleicons.org/docker/2496ED" width="48"><br>
+        <strong>Docker</strong><br>
+        <small>Despliegue</small>
+      </td>
+    </tr>
+  </table>
+</div>
 
-<ul>
-  <li>✅ Gestión de productos (alta, baja, modificación)</li>
-  <li>✅ Control de stock mínimo y máximo</li>
-  <li>✅ Alertas de stock bajo</li>
-  <li>✅ Autenticación segura con JWT y roles (admin, editor, lector)</li>
-  <li>✅ Validaciones de seguridad: registro forzado a rol "lector", cantidad positiva, respeto de stock máximo</li>
-  <li>✅ Paginación en listado de productos y movimientos</li>
-  <li>✅ Índices en base de datos para consultas rápidas</li>
-  <li>✅ <strong>Historial de movimientos de stock</strong> (auditoría de entradas/salidas)</li>
-  <li>✅ <strong>Reportes en PDF y Excel</strong> (productos, stock bajo, movimientos)</li>
-  <li>✅ Rate limiting en login y registro (protección contra fuerza bruta)</li>
-  <li>✅ Logging estructurado de eventos de seguridad y operaciones críticas</li>
-  <li>✅ Validación de contraseña fuerte (mayúscula, número, carácter especial)</li>
-  <li>✅ Tests unitarios y de integración (41 tests, 100% de funcionalidades cubiertas)</li>
-  <li>✅ <strong>Despliegue con Docker</strong> (docker-compose)</li>
-  <li>✅ <strong>Scripts de automatización</strong> para Windows (PowerShell) y Linux (Bash)</li>
-  <li>✅ <strong>Healthcheck</strong> para monitoreo del contenedor</li>
-  <li>✅ <strong>Usuario no root</strong> en contenedor para mayor seguridad</li>
-</ul>
+<hr style="border: 1px dashed #ddd;">
 
-<!-- Próximas características (en desarrollo) -->
-<h2>⏳ Próximas características (en desarrollo)</h2>
+<!-- Características destacadas -->
+<h2 align="center">✨ Características destacadas</h2>
 
-<ul>
-  <li>⏳ Refresh tokens para sesiones más largas sin re-login</li>
-  <li>⏳ Reportes avanzados (gráficos, resúmenes mensuales)</li>
-  <li>⏳ Integración con frontend .NET (ya en desarrollo)</li>
-  <li>⏳ Despliegue con HTTPS mediante nginx-proxy-manager</li>
-</ul>
+<table align="center" style="width: 80%; border-collapse: collapse;">
+  <tr>
+    <td style="padding: 8px 15px; vertical-align: top; width: 50%;">
+      <ul style="list-style: none; padding-left: 0;">
+        <li><strong>📦 Gestión de productos</strong><br><small>CRUD completo, stock mínimo/máximo, alertas de stock bajo</small></li>
+        <li><strong>🔐 Autenticación JWT</strong><br><small>Roles (admin/editor/lector) y refresh tokens</small></li>
+        <li><strong>📊 Auditoría y reportes</strong><br><small>Historial de movimientos, reportes PDF/Excel</small></li>
+      </ul>
+    </td>
+    <td style="padding: 8px 15px; vertical-align: top; width: 50%;">
+      <ul style="list-style: none; padding-left: 0;">
+        <li><strong>🛡️ Seguridad</strong><br><small>Rate limiting, contraseñas seguras, logging estructurado</small></li>
+        <li><strong>🐘 PostgreSQL</strong><br><small>Base de datos robusta y escalable</small></li>
+        <li><strong>🐳 Docker + scripts</strong><br><small>Despliegue automatizado (PowerShell/Bash)</small></li>
+      </ul>
+    </td>
+  </tr>
+</table>
 
-<hr>
+<p align="center"><strong>🧪 42 tests</strong> &nbsp;|&nbsp; Cobertura completa ✅</p>
+
+<hr style="border: 1px dashed #ddd;">
+
+<!-- En desarrollo -->
+<h2 align="center">⏳ En desarrollo</h2>
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center" width="200" style="padding: 15px;">
+        <strong>📱</strong><br>
+        <strong>Frontend MAUI</strong><br>
+        <small>Windows, macOS, Linux, Android, iOS</small>
+      </td>
+      <td align="center" width="200" style="padding: 15px;">
+        <strong>📈</strong><br>
+        <strong>Dashboard</strong><br>
+        <small>Gráficos y estadísticas en tiempo real</small>
+      </td>
+      <td align="center" width="200" style="padding: 15px;">
+        <strong>🔒</strong><br>
+        <strong>HTTPS</strong><br>
+        <small>Nginx-proxy-manager</small>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<hr style="border: 2px solid #6c63ff; border-radius: 5px;">
 
 <!-- Cartel de API REST -->
 <p align="center">
@@ -82,7 +149,7 @@
         <li>Python 3.11+</li>
         <li>FastAPI 0.136</li>
         <li>SQLAlchemy 2.0</li>
-        <li>SQLite</li>
+        <li>PostgreSQL (base de datos principal)</li>
         <li>ReportLab (PDF)</li>
         <li>OpenPyXL (Excel)</li>
         <li>python-jose (JWT)</li>
@@ -91,18 +158,19 @@
       </ul>
     </td>
     <td valign="top" width="33%">
-      <h3>🖥️ Frontend (.NET 10)</h3>
+      <h3>📱 Frontend (.NET MAUI)</h3>
       <ul>
-        <li>.NET 10</li>
-        <li>Windows Forms</li>
+        <li>.NET MAUI 10</li>
+        <li>Multiplataforma (Windows, macOS, Linux, Android, iOS)</li>
         <li>HttpClient (consumo de API)</li>
+        <li>MVVM con Community Toolkit</li>
       </ul>
     </td>
     <td valign="top" width="33%">
       <h3>🔧 Herramientas</h3>
       <ul>
         <li>Git & GitHub</li>
-        <li>Visual Studio 2022</li>
+        <li>Visual Studio 2022 / VS Code</li>
         <li>FastAPI /docs</li>
         <li>Docker & Docker Compose</li>
         <li>pytest / coverage</li>
@@ -119,8 +187,8 @@
 
 <ul>
   <li>Python 3.11+</li>
-  <li>.NET 10 SDK (para compilar el frontend)</li>
-  <li>SQLite3</li>
+  <li>.NET MAUI 10 SDK (para compilar el frontend)</li>
+  <li>PostgreSQL 15+ (local o en contenedor Docker)</li>
   <li>Git (opcional)</li>
   <li>Docker y Docker Compose (opcional, para despliegue)</li>
 </ul>
@@ -140,17 +208,17 @@ cd DesktopManagerStock</code>
 pip install -r requirements.txt
 # Configurar .env (copiar de .env.example)
 cp .env.example .env
-# Editar .env con tus variables
+# Editar .env con tus variables (ver sección de configuración)
 python main.py
 # La API corre en http://localhost:8000
 # Documentación interactiva: http://localhost:8000/docs</code>
 </pre>
 
-<h3>Frontend (Cliente .NET Windows Forms) <span style="background-color: #ffcc00; color: #333; padding: 2px 8px; border-radius: 4px; font-size: 0.7em;">Próximamente</span></h3>
+<h3>Frontend (Cliente .NET MAUI) <span style="background-color: #ffcc00; color: #333; padding: 2px 8px; border-radius: 4px; font-size: 0.7em;">En desarrollo</span></h3>
 <pre>
 <code>cd client
 dotnet build
-dotnet run --project DesktopStock.csproj</code>
+dotnet run --project DesktopManagerStock.csproj</code>
 </pre>
 <p><del>O abre la solución en Visual Studio 2022 y ejecuta.</del> <strong>Esta sección está en desarrollo activo.</strong></p>
 
@@ -228,8 +296,12 @@ SECRET_KEY=tu_clave_secreta_aqui
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 
-# Base de datos
-DATABASE_URL=sqlite:///./stock.db
+# Base de datos PostgreSQL
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=tu_contraseña_sin_acentos
+DB_NAME=desktopmanager
 DB_ECHO=False
 RUN_SEEDER=false
 
@@ -237,7 +309,7 @@ RUN_SEEDER=false
 API_HOST=127.0.0.1
 API_PORT=8000
 API_RELOAD=true
-API_VERSION=0.3.1
+API_VERSION=0.3.2
 
 # Stock
 STOCK_ALERT_THRESHOLD=5
@@ -254,6 +326,8 @@ REGISTER_RATE_LIMIT=2/minute
 ENVIRONMENT=production</code>
 </pre>
 
+<p><strong>Nota:</strong> Asegúrate de que la contraseña no contenga caracteres especiales como acentos o símbolos que puedan causar problemas de codificación en la URL de conexión.</p>
+
 <h2>🧪 Tests</h2>
 
 <p>Para ejecutar la suite de pruebas:</p>
@@ -261,7 +335,7 @@ ENVIRONMENT=production</code>
 <code>cd server
 pytest tests/ -v</code>
 </pre>
-<p>Resultado actual: <strong>41 passed, 1 skipped, 2 warnings</strong> (cobertura completa de funcionalidades críticas).</p>
+<p>Resultado actual: <strong>42 passed, 1 skipped, 2 warnings</strong> (cobertura completa de funcionalidades críticas).</p>
 
 <h2>📡 Documentación de la API</h2>
 
