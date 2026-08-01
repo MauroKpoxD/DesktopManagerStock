@@ -1,0 +1,90 @@
+@inject NavigationState NavState
+@inject AppState AppState
+@inject AuthService AuthService
+@inject AlertaStockService AlertaStockService
+@implements IDisposable
+
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <img src="images/logo.png" alt="logo" />
+        <span>DesktopManagerStock</span>
+    </div>
+
+    <ul class="nav-menu">
+        <li>
+            <a href="javascript:void(0)" class="@Clase(Seccion.Dashboard)" @onclick="() => NavState.IrA(Seccion.Dashboard)">
+                <Icon Name="home" /><span class="label">Inicio</span>
+            </a>
+        </li>
+        <li>
+            <a href="javascript:void(0)" class="@Clase(Seccion.Productos)" @onclick="() => NavState.IrA(Seccion.Productos)">
+                <Icon Name="box" /><span class="label">Productos</span>
+            </a>
+        </li>
+        <li>
+            <a href="javascript:void(0)" class="@Clase(Seccion.Movimientos)" @onclick="() => NavState.IrA(Seccion.Movimientos)">
+                <Icon Name="refresh" /><span class="label">Movimientos</span>
+            </a>
+        </li>
+        <li>
+            <a href="javascript:void(0)" class="@Clase(Seccion.StockBajo)" @onclick="() => NavState.IrA(Seccion.StockBajo)">
+                <Icon Name="alert-triangle" /><span class="label">Stock bajo</span>
+                @if (AlertaStockService.Cantidad > 0)
+                {
+                    <span class="nav-badge">@AlertaStockService.Cantidad</span>
+                }
+            </a>
+        </li>
+        @if (AppState.PuedeEditar)
+        {
+            <li>
+                <a href="javascript:void(0)" class="@Clase(Seccion.Reportes)" @onclick="() => NavState.IrA(Seccion.Reportes)">
+                    <Icon Name="bar-chart" /><span class="label">Reportes</span>
+                </a>
+            </li>
+        }
+        @if (AppState.EsAdmin)
+        {
+            <li>
+                <a href="javascript:void(0)" class="@Clase(Seccion.Usuarios)" @onclick="() => NavState.IrA(Seccion.Usuarios)">
+                    <Icon Name="users" /><span class="label">Usuarios</span>
+                </a>
+            </li>
+        }
+        <li>
+            <a href="javascript:void(0)" class="@Clase(Seccion.Perfil)" @onclick="() => NavState.IrA(Seccion.Perfil)">
+                <Icon Name="user" /><span class="label">Mi perfil</span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="sidebar-footer">
+        <strong>@AppState.UsuarioActual?.Username</strong>
+        <span class="role-badge @AppState.UsuarioActual?.Rol">@AppState.UsuarioActual?.Rol</span>
+        <br />
+        <a href="javascript:void(0)" class="logout-link" @onclick="CerrarSesion">
+            <Icon Name="log-out" CssClass="nav-icon" /> Cerrar sesión
+        </a>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        NavState.OnChange += StateHasChanged;
+        AlertaStockService.OnChange += StateHasChanged;
+    }
+
+    private string Clase(Seccion seccion) => NavState.SeccionActual == seccion ? "active" : "";
+
+    private async Task CerrarSesion()
+    {
+        await AuthService.LogoutAsync();
+    }
+
+    public void Dispose()
+    {
+        NavState.OnChange -= StateHasChanged;
+        AlertaStockService.OnChange -= StateHasChanged;
+    }
+}

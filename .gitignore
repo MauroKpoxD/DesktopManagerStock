@@ -1,0 +1,157 @@
+# ================================
+# Python
+# ================================
+
+# Bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Entornos virtuales
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Distribución / empaquetado
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Logs
+*.log
+
+# Tests y coverage
+.pytest_cache/
+.coverage
+coverage.xml
+*.cover
+htmlcov/
+.tox/
+.mypy_cache/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Archivos de entorno y secretos
+.env.local
+.env.production
+*.key
+*.pem
+
+# ================================
+# Bases de datos (SQLite, etc.)
+# ================================
+*.db
+*.sqlite
+*.sqlite3
+*.db3
+*.mdb
+*.ldb
+stock.db
+db.sqlite3
+database.db
+
+# Archivos de respaldo de bases de datos
+*.db-backup
+*.sqlite-backup
+*.bak
+
+# ================================
+# Archivos generados por la aplicación
+# ================================
+reports/
+logs/
+*.pdf
+*.xlsx
+*.csv
+
+# ================================
+# Java (para el frontend)
+# ================================
+
+# Compilados
+*.class
+*.jar
+*.war
+*.ear
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+
+# Gradle
+.gradle/
+build/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# NetBeans
+nbproject/
+nb-configuration.xml
+
+# ================================
+# Sistema operativo
+# ================================
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+.directory
+*~
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.cache
+
+# ================================
+# Cliente .NET MAUI (client/)
+# ================================
+client/bin/
+client/obj/
+**/bin/
+**/obj/
+*.user
+*.userosscache
+*.sln.docstates
+# Certificados de firma de paquetes locales (no versionar)
+*.pfx
+*.snk

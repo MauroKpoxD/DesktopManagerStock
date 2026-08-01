@@ -1,0 +1,22 @@
+@* Se muestra una sola vez al arrancar la app, mientras en paralelo se intenta
+   restaurar la sesión (ver Routes.razor). Puramente CSS, sin JavaScript. *@
+
+<div class="boot-splash @(FadingOut ? "fading-out" : "")">
+    <div class="boot-splash-bg"></div>
+    <div class="boot-splash-overlay"></div>
+    <div class="boot-splash-content">
+        <h1 class="boot-splash-title">
+            @for (int i = 0; i < NombreApp.Length; i++)
+            {
+                var delayMs = 500 + i * 45;
+                <span style="animation-delay: @(delayMs)ms">@NombreApp[i]</span>
+            }
+        </h1>
+        <p class="boot-splash-subtitle">Gestión de inventario y stock</p>
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool FadingOut { get; set; }
+    private const string NombreApp = "DesktopManagerStock";
+}

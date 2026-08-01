@@ -1,0 +1,61 @@
+@inject ToastService ToastService
+@inject ThemeService ThemeService
+@implements IDisposable
+
+<div class="toast-container @(ThemeService.EsClaro ? "theme-light" : "")">
+    @foreach (var toast in ToastService.Mensajes)
+    {
+        <div class="toast toast-@Clase(toast.Tipo)" @key="toast.Id">
+            <span class="toast-icon">
+                @switch (toast.Tipo)
+                {
+                    case TipoToast.Exito:
+                        <Icon Name="check-circle" CssClass="" />
+                        break;
+                    case TipoToast.Error:
+                        <Icon Name="alert-triangle" CssClass="" />
+                        break;
+                    default:
+                        <Icon Name="refresh" CssClass="" />
+                        break;
+                }
+            </span>
+            <span class="toast-text">@toast.Texto</span>
+            @if (toast.OnAccion is not null)
+            {
+                <button class="toast-action" @onclick="() => EjecutarAccionAsync(toast)">@toast.AccionTexto</button>
+            }
+            <button class="toast-close" @onclick="() => ToastService.Descartar(toast.Id)">✕</button>
+        </div>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        ToastService.OnChange += StateHasChanged;
+        ThemeService.OnChange += StateHasChanged;
+    }
+
+    private async Task EjecutarAccionAsync(ToastMensaje toast)
+    {
+        ToastService.Descartar(toast.Id);
+        if (toast.OnAccion is not null)
+        {
+            await toast.OnAccion.Invoke();
+        }
+    }
+
+    private static string Clase(TipoToast tipo) => tipo switch
+    {
+        TipoToast.Exito => "exito",
+        TipoToast.Error => "error",
+        _ => "info",
+    };
+
+    public void Dispose()
+    {
+        ToastService.OnChange -= StateHasChanged;
+        ThemeService.OnChange -= StateHasChanged;
+    }
+}

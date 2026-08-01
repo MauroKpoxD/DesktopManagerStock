@@ -1,0 +1,150 @@
+@inject MovimientoService MovimientoService
+@inject ProductoService ProductoService
+
+<div class="page-header">
+    <h1>Movimientos de stock</h1>
+</div>
+
+<div class="card">
+    <div class="form-grid">
+        <div class="field">
+            <label>Producto</label>
+            <select @bind="_productoIdFiltro" @bind:after="CargarConReseteoAsync">
+                <option value="">Todos</option>
+                @foreach (var p in _productosParaFiltro)
+                {
+                    <option value="@p.Id">@p.Nombre</option>
+                }
+            </select>
+        </div>
+        <div class="field">
+            <label>Tipo</label>
+            <select @bind="_tipoFiltro" @bind:after="CargarConReseteoAsync">
+                <option value="">Todos</option>
+                <option value="entrada">Entradas</option>
+                <option value="salida">Salidas</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-error">@_error</div>
+}
+
+@if (_cargando)
+{
+    <TableSkeleton Filas="8" Columnas="5" />
+}
+else if (_movimientos.Count == 0)
+{
+    <div class="table-wrap">
+        <div class="empty-state">No hay movimientos que coincidan con el filtro.</div>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Producto</th>
+                    <th>Tipo</th>
+                    <th>Cantidad</th>
+                    <th>Stock resultante</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var m in _movimientos)
+                {
+                    <tr>
+                        <td>@m.FechaHora.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@NombreProducto(m.ProductoId)</td>
+                        <td>
+                            @if (m.Tipo == "entrada")
+                            {
+                                <span class="badge badge-entrada">Entrada</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-salida">Salida</span>
+                            }
+                        </td>
+                        <td>@m.Cantidad</td>
+                        <td>@m.StockResultante</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <PaginacionControl PaginaActual="_paginaActual" TamanioPagina="TamanioPagina" Total="_total"
+            OnCambiarPagina="CambiarPaginaAsync" />
+    </div>
+}
+
+@code {
+    private List<Movimiento> _movimientos = new();
+    private List<Producto> _productosParaFiltro = new();
+    private int _total;
+    private bool _cargando = true;
+    private string? _error;
+    private string _productoIdFiltro = "";
+    private string _tipoFiltro = "";
+    private int _paginaActual = 1;
+    private const int TamanioPagina = 25;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // incluir_inactivos=true: un movimiento puede referenciar un
+            // producto ya desactivado y aun así queremos poder filtrar por él.
+            var pagina = await ProductoService.ListarAsync(0, 500, incluirInactivos: true);
+            _productosParaFiltro = pagina.Items;
+        }
+        catch
+        {
+            // Si falla, el filtro por producto queda vacío pero el listado
+            // general de movimientos igual funciona.
+        }
+        await CargarAsync();
+    }
+
+    private Task CargarConReseteoAsync()
+    {
+        _paginaActual = 1;
+        return CargarAsync();
+    }
+
+    private async Task CambiarPaginaAsync(int nuevaPagina)
+    {
+        _paginaActual = nuevaPagina;
+        await CargarAsync();
+    }
+
+    private async Task CargarAsync()
+    {
+        _cargando = true;
+        _error = null;
+        try
+        {
+            int? productoId = int.TryParse(_productoIdFiltro, out var id) ? id : null;
+            string? tipo = string.IsNullOrEmpty(_tipoFiltro) ? null : _tipoFiltro;
+            var pagina = await MovimientoService.ListarAsync((_paginaActual - 1) * TamanioPagina, TamanioPagina, productoId, tipo);
+            _movimientos = pagina.Items;
+            _total = pagina.Total;
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _cargando = false;
+        }
+    }
+
+    private string NombreProducto(int productoId) =>
+        _productosParaFiltro.FirstOrDefault(p => p.Id == productoId)?.Nombre ?? $"#{productoId}";
+}

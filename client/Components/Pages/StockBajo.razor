@@ -1,0 +1,91 @@
+@inject ProductoService ProductoService
+@inject AlertaStockService AlertaStockService
+
+<div class="page-header">
+    <h1>Stock bajo</h1>
+    <div class="actions">
+        <div class="field" style="margin-bottom:0;">
+            <input type="number" min="0" placeholder="Umbral personalizado (opcional)" @bind="_umbralTexto" style="width: 220px;" />
+        </div>
+        <button class="btn btn-primary" @onclick="CargarAsync">Aplicar</button>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card @(_productos.Count > 0 ? "warning" : "success")">
+        <div class="stat-card-icon"><Icon Name="@(_productos.Count > 0 ? "alert-triangle" : "check-circle")" CssClass="" /></div>
+        <div class="stat-value">@_productos.Count</div>
+        <div class="stat-label">Productos por reponer</div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-error">@_error</div>
+}
+
+@if (_cargando)
+{
+    <div class="loading-inline"><span class="spinner"></span> Buscando productos con stock bajo…</div>
+}
+else if (_productos.Count == 0)
+{
+    <div class="table-wrap">
+        <div class="empty-state">✅ No hay productos con stock bajo por ahora.</div>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Stock actual</th>
+                    <th>Stock mínimo</th>
+                    <th>Faltan</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in _productos)
+                {
+                    <tr>
+                        <td>@p.Nombre</td>
+                        <td><span class="badge @(p.Stock <= 0 ? "badge-out" : "badge-low")">@p.Stock</span></td>
+                        <td>@p.StockMinimo</td>
+                        <td>@Math.Max(0, p.StockMinimo - p.Stock)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<Producto> _productos = new();
+    private bool _cargando = true;
+    private string? _error;
+    private string _umbralTexto = "";
+
+    protected override Task OnInitializedAsync() => CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        _cargando = true;
+        _error = null;
+        try
+        {
+            int? umbral = int.TryParse(_umbralTexto, out var u) ? u : null;
+            _productos = await ProductoService.ListarStockBajoAsync(umbral);
+            AlertaStockService.Actualizar(_productos.Count);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _cargando = false;
+        }
+    }
+}
