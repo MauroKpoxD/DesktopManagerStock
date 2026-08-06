@@ -362,8 +362,6 @@ pytest tests/ -v</code>
 
 <ul>
   <li><a href="docs/cliente.md"><strong>Guía del cliente .NET MAUI</strong></a> – compilación, configuración de la API, estructura del proyecto y notas para desarrolladores.</li>
-  <li><a href="docs/MEJORAS.md"><strong>Mejoras y correcciones aplicadas</strong></a> – resumen de bugs críticos, de seguridad y funcionalidades agregadas.</li>
-</ul>
 
 <h2>🤝 Contribuir</h2>
 
@@ -378,4 +376,3 @@ pytest tests/ -v</code>
 <h2>📄 Licencia</h2>
 
 <p><b>APACHE 2.0</b> - ver archivo <a href="LICENSE">LICENSE</a></p>
-```
