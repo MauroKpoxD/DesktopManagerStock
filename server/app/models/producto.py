@@ -1,11 +1,7 @@
 """
 Modelo de Producto.
 """
-<<<<<<< HEAD
-from sqlalchemy import Column, Integer, String, Float, Index
-=======
 from sqlalchemy import Column, Integer, String, Float, Boolean, Index
->>>>>>> feature/interfaz-y-reconstruccion
 from app.core.database import Base
 
 class ProductoDB(Base):
@@ -17,8 +13,6 @@ class ProductoDB(Base):
     stock = Column(Integer, default=0)
     stock_minimo = Column(Integer, default=5)
     stock_maximo = Column(Integer, default=100)
-<<<<<<< HEAD
-=======
     # Antes "eliminar" un producto lo borraba físicamente y, por el
     # ondelete="CASCADE" en MovimientoDB.producto_id, se llevaba puesto todo
     # su historial de movimientos: justo la auditoría que el sistema dice
@@ -36,6 +30,5 @@ class ProductoDB(Base):
     # saber a quién reponerle sin la complejidad de un módulo de proveedores.
     proveedor_nombre = Column(String, nullable=True)
     proveedor_contacto = Column(String, nullable=True)
->>>>>>> feature/interfaz-y-reconstruccion
 
     __table_args__ = (Index('idx_producto_stock', 'stock'),)

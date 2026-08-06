@@ -1,19 +1,11 @@
 """
 Rutas principales: productos y movimientos.
 """
-<<<<<<< HEAD
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
-from typing import Optional
-
-from app.schemas.producto import Producto, ProductoCreate, ProductoUpdate
-=======
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Response, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import Optional
 
 from app.schemas.producto import Producto, ProductoCreate, ProductoUpdate, ImportacionResultado
->>>>>>> feature/interfaz-y-reconstruccion
 from app.schemas.movimiento import Movimiento
 from app.core.database import get_db
 from app.core.config import settings
@@ -22,36 +14,20 @@ from app.core.roles import require_roles, Rol
 from app.models.usuario import UsuarioDB
 from app.services.producto_service import (
     listar_productos,
-<<<<<<< HEAD
-=======
     contar_productos,
->>>>>>> feature/interfaz-y-reconstruccion
     obtener_producto_por_id,
     crear_producto,
     actualizar_producto,
     eliminar_producto,
-<<<<<<< HEAD
-    ajustar_stock,
-    obtener_productos_con_stock_bajo
-=======
     reactivar_producto,
     ajustar_stock,
     obtener_productos_con_stock_bajo,
     listar_categorias,
     importar_productos_csv
->>>>>>> feature/interfaz-y-reconstruccion
 )
 from app.services.movimiento_service import (
     obtener_movimiento_por_id,
     listar_movimientos,
-<<<<<<< HEAD
-    obtener_movimientos_por_rango_ids
-)
-from app.core.exceptions import NotFoundError, ValidationError, ConflictError
-
-router = APIRouter(prefix="/api/v1", tags=["productos"])
-
-=======
     contar_movimientos,
     obtener_movimientos_por_rango_ids
 )
@@ -63,7 +39,6 @@ router = APIRouter(prefix="/api/v1", tags=["productos"])
 # manejadores globales registrados en main.py que las traducen al
 # HTTPException correspondiente con el mismo código de estado que antes.
 
->>>>>>> feature/interfaz-y-reconstruccion
 @router.get("/")
 def home():
     return {
@@ -74,14 +49,6 @@ def home():
 
 @router.get("/productos", response_model=list[Producto])
 def get_productos(
-<<<<<<< HEAD
-    skip: int = Query(0, ge=0, description="Número de registros a saltar"),
-    limit: int = Query(100, ge=1, le=1000, description="Máximo de registros a retornar"),
-    db: Session = Depends(get_db),
-    current_user: UsuarioDB = Depends(get_current_active_user)
-):
-    return listar_productos(db, skip=skip, limit=limit)
-=======
     response: Response,
     skip: int = Query(0, ge=0, description="Número de registros a saltar"),
     limit: int = Query(100, ge=1, le=1000, description="Máximo de registros a retornar"),
@@ -123,7 +90,6 @@ async def importar_productos_csv_endpoint(
         raise HTTPException(status_code=400, detail="El archivo no está en UTF-8. Volvé a guardarlo con esa codificación.")
     resultado = importar_productos_csv(db, contenido_texto)
     return resultado
->>>>>>> feature/interfaz-y-reconstruccion
 
 @router.get("/productos/{producto_id}", response_model=Producto)
 def get_producto(
@@ -131,14 +97,10 @@ def get_producto(
     db: Session = Depends(get_db),
     current_user: UsuarioDB = Depends(get_current_active_user)
 ):
-<<<<<<< HEAD
     try:
         return obtener_producto_por_id(db, producto_id)
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
-=======
-    return obtener_producto_por_id(db, producto_id)
->>>>>>> feature/interfaz-y-reconstruccion
 
 @router.post("/productos", response_model=Producto, status_code=status.HTTP_201_CREATED)
 def create_producto(
@@ -146,14 +108,11 @@ def create_producto(
     db: Session = Depends(get_db),
     current_user: UsuarioDB = Depends(require_roles([Rol.ADMIN, Rol.EDITOR]))
 ):
-<<<<<<< HEAD
     try:
         return crear_producto(db, producto)
     except (ValidationError, ConflictError) as e:
         raise HTTPException(status_code=400, detail=str(e))
-=======
     return crear_producto(db, producto)
->>>>>>> feature/interfaz-y-reconstruccion
 
 @router.put("/productos/{producto_id}", response_model=Producto)
 def update_producto(
@@ -162,16 +121,7 @@ def update_producto(
     db: Session = Depends(get_db),
     current_user: UsuarioDB = Depends(require_roles([Rol.ADMIN, Rol.EDITOR]))
 ):
-<<<<<<< HEAD
-    try:
-        return actualizar_producto(db, producto_id, producto_update)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except (ValidationError, ConflictError) as e:
-        raise HTTPException(status_code=400, detail=str(e))
-=======
     return actualizar_producto(db, producto_id, producto_update, es_admin=(current_user.rol == Rol.ADMIN.value))
->>>>>>> feature/interfaz-y-reconstruccion
 
 @router.delete("/productos/{producto_id}", status_code=204)
 def delete_producto(
@@ -179,12 +129,10 @@ def delete_producto(
     db: Session = Depends(get_db),
     current_user: UsuarioDB = Depends(require_roles([Rol.ADMIN]))
 ):
-<<<<<<< HEAD
     try:
         eliminar_producto(db, producto_id)
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
-=======
     # Soft delete: desactiva el producto pero conserva su historial de
     # movimientos para auditoría (ver producto_service.eliminar_producto).
     eliminar_producto(db, producto_id)
@@ -196,7 +144,6 @@ def reactivar_producto_endpoint(
     current_user: UsuarioDB = Depends(require_roles([Rol.ADMIN]))
 ):
     return reactivar_producto(db, producto_id)
->>>>>>> feature/interfaz-y-reconstruccion
 
 @router.patch("/productos/{producto_id}/stock")
 def ajustar_stock_endpoint(
@@ -206,16 +153,8 @@ def ajustar_stock_endpoint(
     db: Session = Depends(get_db),
     current_user: UsuarioDB = Depends(require_roles([Rol.ADMIN, Rol.EDITOR]))
 ):
-<<<<<<< HEAD
-    try:
-        producto = ajustar_stock(db, producto_id, cantidad, tipo == "entrada", current_user.id)
-        return {"mensaje": f"Stock actualizado. Nuevo stock: {producto.stock}"}
-    except (NotFoundError, ValidationError) as e:
-        raise HTTPException(status_code=400, detail=str(e))
-=======
     producto = ajustar_stock(db, producto_id, cantidad, tipo == "entrada", current_user.id)
     return {"mensaje": f"Stock actualizado. Nuevo stock: {producto.stock}"}
->>>>>>> feature/interfaz-y-reconstruccion
 
 @router.get("/productos/stock/bajo", response_model=list[Producto])
 def productos_stock_bajo(
@@ -226,14 +165,11 @@ def productos_stock_bajo(
     productos_db = obtener_productos_con_stock_bajo(db, umbral)
     return [Producto.model_validate(p) for p in productos_db]
 
-# ========== RUTAS DE MOVIMIENTOS (orden corregido) ==========
+# ========== RUTAS DE MOVIMIENTOS ==========
 
 @router.get("/movimientos", response_model=list[Movimiento])
 def listar_movimientos_endpoint(
-<<<<<<< HEAD
-=======
     response: Response,
->>>>>>> feature/interfaz-y-reconstruccion
     skip: int = Query(0, ge=0, description="Número de movimientos a saltar"),
     limit: int = Query(100, ge=1, le=1000, description="Máximo de movimientos a retornar"),
     producto_id: Optional[int] = Query(None, description="Filtrar por ID de producto"),
@@ -241,10 +177,7 @@ def listar_movimientos_endpoint(
     db: Session = Depends(get_db),
     current_user: UsuarioDB = Depends(get_current_active_user)
 ):
-<<<<<<< HEAD
-=======
     response.headers["X-Total-Count"] = str(contar_movimientos(db, producto_id=producto_id, tipo=tipo))
->>>>>>> feature/interfaz-y-reconstruccion
     return listar_movimientos(db, skip=skip, limit=limit, producto_id=producto_id, tipo=tipo)
 
 # IMPORTANTE: ruta fija /range ANTES de la ruta con parámetro {movimiento_id}
@@ -269,11 +202,4 @@ def obtener_movimiento_endpoint(
     db: Session = Depends(get_db),
     current_user: UsuarioDB = Depends(get_current_active_user)
 ):
-<<<<<<< HEAD
-    try:
-        return obtener_movimiento_por_id(db, movimiento_id)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-=======
     return obtener_movimiento_por_id(db, movimiento_id)
->>>>>>> feature/interfaz-y-reconstruccion

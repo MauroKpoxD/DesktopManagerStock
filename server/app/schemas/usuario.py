@@ -4,8 +4,6 @@ Esquemas de Usuario y autenticación.
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from typing import Optional
 
-<<<<<<< HEAD
-=======
 
 def _validar_fortaleza_password(v: str) -> str:
     """
@@ -23,7 +21,6 @@ def _validar_fortaleza_password(v: str) -> str:
     return v
 
 
->>>>>>> feature/interfaz-y-reconstruccion
 class UsuarioBase(BaseModel):
     username: str
     email: EmailStr
@@ -34,28 +31,14 @@ class UsuarioCreate(UsuarioBase):
 
     @field_validator('password')
     def validate_password_strength(cls, v):
-<<<<<<< HEAD
-        if not any(char.isupper() for char in v):
-            raise ValueError('La contraseña debe contener al menos una letra mayúscula')
-        if not any(char.isdigit() for char in v):
-            raise ValueError('La contraseña debe contener al menos un número')
-        if not any(char in "!@#$%^&*()-_=+[]{}|;:,.<>?/" for char in v):
-            raise ValueError('La contraseña debe contener al menos un carácter especial')
-        return v
-
-class UsuarioUpdate(BaseModel):
-=======
         return _validar_fortaleza_password(v)
 
 class UsuarioUpdate(BaseModel):
     """Uso administrativo: permite cambiar el rol y activar/desactivar usuarios."""
->>>>>>> feature/interfaz-y-reconstruccion
     email: Optional[EmailStr] = None
     rol: Optional[str] = None
     activo: Optional[bool] = None
 
-<<<<<<< HEAD
-=======
 class PerfilUpdate(BaseModel):
     """Uso propio: un usuario solo puede editar su email, nunca su rol."""
     email: EmailStr
@@ -68,21 +51,17 @@ class CambioPassword(BaseModel):
     def validate_password_strength(cls, v):
         return _validar_fortaleza_password(v)
 
->>>>>>> feature/interfaz-y-reconstruccion
 class Usuario(UsuarioBase):
     id: int
     activo: bool
     model_config = ConfigDict(from_attributes=True)
 
-<<<<<<< HEAD
-=======
 class PasswordTemporal(BaseModel):
     """Respuesta de POST /usuarios/{id}/resetear-password: la contraseña
     solo se muestra en esta respuesta, no queda guardada en ningún lado."""
     usuario: Usuario
     password_temporal: str
 
->>>>>>> feature/interfaz-y-reconstruccion
 class Token(BaseModel):
     access_token: str
     token_type: str

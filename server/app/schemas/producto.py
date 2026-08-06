@@ -10,13 +10,10 @@ class ProductoBase(BaseModel):
     stock: int
     stock_minimo: Optional[int] = 5
     stock_maximo: Optional[int] = 100
-<<<<<<< HEAD
-=======
     categoria: Optional[str] = None
     sku: Optional[str] = None
     proveedor_nombre: Optional[str] = None
     proveedor_contacto: Optional[str] = None
->>>>>>> feature/interfaz-y-reconstruccion
 
     @field_validator('precio')
     def validar_precio(cls, v):
@@ -58,15 +55,12 @@ class ProductoUpdate(BaseModel):
     precio: Optional[float] = None
     stock_minimo: Optional[int] = None
     stock_maximo: Optional[int] = None
-<<<<<<< HEAD
-=======
     categoria: Optional[str] = None
     sku: Optional[str] = None
     proveedor_nombre: Optional[str] = None
     proveedor_contacto: Optional[str] = None
     # Permite reactivar un producto previamente desactivado (ver DELETE /productos/{id}).
     activo: Optional[bool] = None
->>>>>>> feature/interfaz-y-reconstruccion
 
     @field_validator('precio')
     def validar_precio(cls, v):
@@ -95,9 +89,6 @@ class ProductoUpdate(BaseModel):
 
 class Producto(ProductoBase):
     id: int
-<<<<<<< HEAD
-    model_config = ConfigDict(from_attributes=True)
-=======
     activo: bool = True
     model_config = ConfigDict(from_attributes=True)
 
@@ -110,4 +101,3 @@ class ImportacionResultado(BaseModel):
     creados: int
     productos_creados: list[str]
     omitidos: list[ImportacionOmitida]
->>>>>>> feature/interfaz-y-reconstruccion

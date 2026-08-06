@@ -131,15 +131,11 @@ Authorization: Bearer <access_token>
 
 #### 5.1 Listar productos (paginado)
 
-<<<<<<< HEAD
-**GET** `/productos?skip=0&limit=100`
-=======
 **GET** `/productos?skip=0&limit=100&incluir_inactivos=false&categoria=Almacén`
 
 - `incluir_inactivos` (opcional, default `false`): si es `true`, incluye también los productos desactivados (ver 5.5).
 - `categoria` (opcional): filtra por categoría exacta.
 - La respuesta incluye el header `X-Total-Count` con el total de productos que cumplen el filtro (útil para paginar en el cliente sin traer todo).
->>>>>>> feature/interfaz-y-reconstruccion
 
 **Respuesta:** Lista de objetos `Producto`:
 
@@ -148,12 +144,6 @@ Authorization: Bearer <access_token>
   {
     "id": 1,
     "nombre": "Laptop",
-<<<<<<< HEAD
-    "precio": 1500.50,
-    "stock": 10,
-    "stock_minimo": 5,
-    "stock_maximo": 50
-=======
     "categoria": "Electrónica",
     "sku": "LAP-001",
     "proveedor_nombre": "Distribuidora XYZ",
@@ -163,18 +153,14 @@ Authorization: Bearer <access_token>
     "stock_minimo": 5,
     "stock_maximo": 50,
     "activo": true
->>>>>>> feature/interfaz-y-reconstruccion
   }
 ]
 ```
 
-<<<<<<< HEAD
-=======
 `categoria`, `sku`, `proveedor_nombre` y `proveedor_contacto` son todos campos de texto libre y opcionales (pueden ser `null`).
 
 **GET** `/productos/categorias` devuelve la lista de categorías distintas ya usadas por productos activos (`["Almacén", "Electrónica", ...]`), útil para poblar un filtro en el cliente.
 
->>>>>>> feature/interfaz-y-reconstruccion
 #### 5.2 Obtener producto por ID
 
 **GET** `/productos/{id}`
@@ -210,18 +196,12 @@ Authorization: Bearer <access_token>
 }
 ```
 
-<<<<<<< HEAD
-**Nota:** El campo `stock` no se puede modificar directamente; se debe usar el endpoint de ajuste de stock.
-=======
 **Nota:** El campo `stock` no se puede modificar directamente; se debe usar el endpoint de ajuste de stock. El campo `activo` solo puede modificarlo un usuario con rol `admin` (un `editor` recibe 400 si lo incluye).
->>>>>>> feature/interfaz-y-reconstruccion
 
 #### 5.5 Eliminar producto (solo admin)
 
 **DELETE** `/productos/{id}` (sin contenido, 204)
 
-<<<<<<< HEAD
-=======
 Es un **soft delete**: el producto se marca como `activo=false` y deja de aparecer en los listados por defecto, pero **su historial de movimientos se conserva** para auditoría y reportes. Un producto desactivado no admite nuevos ajustes de stock (400 si se intenta). El nombre del producto queda reservado (no se puede crear otro con el mismo nombre) hasta que se reactive o se le cambie el nombre.
 
 #### 5.5b Reactivar producto (solo admin)
@@ -245,7 +225,6 @@ Columnas reconocidas (solo `nombre` es obligatoria): `nombre, categoria, sku, pr
 }
 ```
 
->>>>>>> feature/interfaz-y-reconstruccion
 #### 5.6 Ajustar stock (requiere admin o editor)
 
 **PATCH** `/productos/{id}/stock?cantidad=5&tipo=entrada`  
@@ -583,8 +562,6 @@ El contenedor `api` debe aparecer como `healthy`.
 
 ---
 
-<<<<<<< HEAD
-=======
 ## 👤 Perfil propio
 
 #### 8.1 Ver mi perfil
@@ -661,15 +638,10 @@ Responde `503` con `"status": "degraded"` si la base de datos no responde. Es el
 
 ---
 
->>>>>>> feature/interfaz-y-reconstruccion
 ## 📄 Licencia
 
 Este proyecto está bajo licencia **Apache 2.0**. Consulta el archivo LICENSE para más detalles.
 
 ---
 
-<<<<<<< HEAD
-**Última actualización:** 2026-07-09
-=======
 **Última actualización:** 2026-07-13
->>>>>>> feature/interfaz-y-reconstruccion

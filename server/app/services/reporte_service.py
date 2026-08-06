@@ -87,13 +87,8 @@ def _generar_pdf_generico(titulo: str, encabezados: List[str], datos: List[List]
 
 def generar_reporte_productos(db: Session, formato: str) -> StreamingResponse:
     productos = listar_productos(db, skip=0, limit=1000)
-<<<<<<< HEAD
-    encabezados = ["ID", "Nombre", "Precio", "Stock", "Stock Mínimo", "Stock Máximo"]
-    datos = [[p.id, p.nombre, f"${p.precio:.2f}", p.stock, p.stock_minimo, p.stock_maximo] for p in productos]
-=======
     encabezados = ["ID", "Nombre", "Categoría", "Precio", "Stock", "Stock Mínimo", "Stock Máximo"]
     datos = [[p.id, p.nombre, p.categoria or "-", f"${p.precio:.2f}", p.stock, p.stock_minimo, p.stock_maximo] for p in productos]
->>>>>>> feature/interfaz-y-reconstruccion
     titulo = "Reporte de Productos"
     if formato == "excel":
         buffer = _generar_excel_generico(titulo, encabezados, datos)

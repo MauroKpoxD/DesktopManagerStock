@@ -1,12 +1,9 @@
 """
 Servicio de productos con lógica de negocio.
 """
-<<<<<<< HEAD
-=======
 import csv
 import io
 from pydantic import ValidationError as PydanticValidationError
->>>>>>> feature/interfaz-y-reconstruccion
 from sqlalchemy.orm import Session
 from app.models.producto import ProductoDB
 from app.schemas.producto import ProductoCreate, ProductoUpdate
@@ -17,12 +14,6 @@ from app.core.exceptions import NotFoundError, ValidationError, ConflictError
 
 logger = get_logger(__name__)
 
-<<<<<<< HEAD
-def listar_productos(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(ProductoDB).order_by(ProductoDB.id).offset(skip).limit(limit).all()
-
-def obtener_producto_por_id(db: Session, producto_id: int):
-=======
 def listar_productos(db: Session, skip: int = 0, limit: int = 100, incluir_inactivos: bool = False, categoria: str = None):
     query = db.query(ProductoDB)
     if not incluir_inactivos:
@@ -54,7 +45,6 @@ def obtener_producto_por_id(db: Session, producto_id: int):
     # Se busca sin filtrar por "activo": un producto desactivado debe poder
     # seguir consultándose por ID (por ejemplo, para ver su historial de
     # movimientos o reactivarlo), solo se oculta de los listados generales.
->>>>>>> feature/interfaz-y-reconstruccion
     producto = db.query(ProductoDB).filter(ProductoDB.id == producto_id).first()
     if not producto:
         raise NotFoundError(f"Producto con ID {producto_id} no encontrado")
@@ -63,16 +53,12 @@ def obtener_producto_por_id(db: Session, producto_id: int):
 def crear_producto(db: Session, producto: ProductoCreate):
     existente = db.query(ProductoDB).filter(ProductoDB.nombre == producto.nombre).first()
     if existente:
-<<<<<<< HEAD
-        raise ConflictError(f"Ya existe un producto con el nombre '{producto.nombre}'")
-=======
         if existente.activo:
             raise ConflictError(f"Ya existe un producto con el nombre '{producto.nombre}'")
         raise ConflictError(
             f"Ya existe un producto desactivado con el nombre '{producto.nombre}'. "
             f"Reactívalo con PUT /productos/{existente.id} (activo=true) en vez de crear uno nuevo."
         )
->>>>>>> feature/interfaz-y-reconstruccion
     db_producto = ProductoDB(**producto.model_dump())
     db.add(db_producto)
     db.commit()
@@ -80,10 +66,6 @@ def crear_producto(db: Session, producto: ProductoCreate):
     logger.info(f"Producto creado: {db_producto.nombre} (ID {db_producto.id})")
     return db_producto
 
-<<<<<<< HEAD
-def actualizar_producto(db: Session, producto_id: int, producto_update: ProductoUpdate):
-    db_producto = obtener_producto_por_id(db, producto_id)
-=======
 def actualizar_producto(db: Session, producto_id: int, producto_update: ProductoUpdate, es_admin: bool = False):
     db_producto = obtener_producto_por_id(db, producto_id)
     if producto_update.activo is not None and not es_admin:
@@ -91,7 +73,6 @@ def actualizar_producto(db: Session, producto_id: int, producto_update: Producto
         # activar/desactivar un producto es una operación de administrador,
         # no algo que un editor deba poder hacer de paso al actualizar el precio.
         raise ValidationError("Solo un administrador puede activar o desactivar un producto")
->>>>>>> feature/interfaz-y-reconstruccion
     if producto_update.nombre and producto_update.nombre != db_producto.nombre:
         existente = db.query(ProductoDB).filter(ProductoDB.nombre == producto_update.nombre).first()
         if existente:
@@ -110,18 +91,6 @@ def actualizar_producto(db: Session, producto_id: int, producto_update: Producto
     return db_producto
 
 def eliminar_producto(db: Session, producto_id: int):
-<<<<<<< HEAD
-    db_producto = obtener_producto_por_id(db, producto_id)
-    db.delete(db_producto)
-    db.commit()
-    logger.info(f"Producto eliminado: ID {producto_id}")
-    return True
-
-def ajustar_stock(db: Session, producto_id: int, cantidad: int, es_entrada: bool, usuario_id: int):
-    if cantidad <= 0:
-        raise ValidationError("La cantidad debe ser positiva")
-    producto = obtener_producto_por_id(db, producto_id)
-=======
     """
     Antes esto hacía un DELETE físico. Como MovimientoDB.producto_id tiene
     ondelete="CASCADE", borrar un producto borraba en cascada TODO su
@@ -170,7 +139,6 @@ def ajustar_stock(db: Session, producto_id: int, cantidad: int, es_entrada: bool
     if not producto.activo:
         raise ValidationError(f"El producto '{producto.nombre}' está desactivado y no admite movimientos de stock")
 
->>>>>>> feature/interfaz-y-reconstruccion
     if es_entrada:
         nuevo_stock = producto.stock + cantidad
         if nuevo_stock > producto.stock_maximo:
@@ -197,12 +165,6 @@ def ajustar_stock(db: Session, producto_id: int, cantidad: int, es_entrada: bool
     return producto
 
 def obtener_productos_con_stock_bajo(db: Session, umbral: int = None):
-<<<<<<< HEAD
-    if umbral is not None:
-        return db.query(ProductoDB).filter(ProductoDB.stock <= umbral).all()
-    else:
-        return db.query(ProductoDB).filter(ProductoDB.stock <= ProductoDB.stock_minimo).all()
-=======
     query = db.query(ProductoDB).filter(ProductoDB.activo.is_(True))
     if umbral is not None:
         return query.filter(ProductoDB.stock <= umbral).all()
@@ -270,4 +232,3 @@ def importar_productos_csv(db: Session, contenido: str):
 
     logger.info(f"Importación CSV: {len(creados)} creados, {len(omitidos)} omitidos de {total_filas} filas")
     return {"total_filas": total_filas, "creados": len(creados), "productos_creados": creados, "omitidos": omitidos}
->>>>>>> feature/interfaz-y-reconstruccion

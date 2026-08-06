@@ -30,12 +30,9 @@ class Settings(BaseSettings):
     secret_key: str = Field(..., min_length=32)
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
-<<<<<<< HEAD
-=======
     # Antes se usaba una constante fija de 7 días en refresh_token_service.py,
     # ignorando esta variable pese a que ya existía en .env.example.
     refresh_token_expire_days: int = 7
->>>>>>> feature/interfaz-y-reconstruccion
 
     # Stock
     stock_alert_threshold: int = 5
@@ -96,8 +93,6 @@ class Settings(BaseSettings):
         return self
 
     @model_validator(mode='after')
-<<<<<<< HEAD
-=======
     def validate_cors(self):
         # Con allow_credentials=True (ver main.py), los navegadores rechazan
         # el origen comodín "*". Falla rápido en el arranque en vez de dejar
@@ -112,7 +107,6 @@ class Settings(BaseSettings):
         return self
 
     @model_validator(mode='after')
->>>>>>> feature/interfaz-y-reconstruccion
     def ensure_directories(self):
         self.users_root.mkdir(parents=True, exist_ok=True)
         self.reports_dir.mkdir(exist_ok=True)

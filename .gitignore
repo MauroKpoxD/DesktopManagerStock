@@ -142,10 +142,6 @@ Desktop.ini
 *.user
 *.cache
 
-<<<<<<< HEAD
-# Proyecto cliente C# (todavia no subir nada)
-client/
-=======
 # ================================
 # Cliente .NET MAUI (client/)
 # ================================
@@ -159,4 +155,3 @@ client/obj/
 # Certificados de firma de paquetes locales (no versionar)
 *.pfx
 *.snk
->>>>>>> feature/interfaz-y-reconstruccion

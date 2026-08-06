@@ -1,6 +1,4 @@
 services:
-<<<<<<< HEAD
-=======
   db:
     image: postgres:16-alpine
     container_name: desktop-stock-db
@@ -21,7 +19,6 @@ services:
     # ports:
     #   - "5432:5432"
 
->>>>>>> feature/interfaz-y-reconstruccion
   api:
     build: .
     container_name: desktop-stock-api
@@ -33,25 +30,13 @@ services:
       - ./usuarios:/app/usuarios
     env_file:
       - .env
-<<<<<<< HEAD
-=======
     environment:
       # Dentro de la red de Docker, la API debe conectarse al servicio "db", no a localhost.
       DB_HOST: db
->>>>>>> feature/interfaz-y-reconstruccion
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
-<<<<<<< HEAD
-    user: "1000:1000"  # Reemplaza con tu UID:GID
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request, os, sys; sys.exit(0 if urllib.request.urlopen(f'http://localhost:{os.environ[\"API_PORT\"]}/api/v1/').getcode() == 200 else 1)"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-=======
     user: "1000:1000"  # Reemplaza con tu UID:GID (ejecuta `id -u` / `id -g` en tu host)
     healthcheck:
       test: ["CMD", "python", "healthcheck.py"]
@@ -62,4 +47,3 @@ services:
 
 volumes:
   pgdata:
->>>>>>> feature/interfaz-y-reconstruccion

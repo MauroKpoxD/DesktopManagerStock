@@ -115,11 +115,7 @@
       <td align="center" width="200" style="padding: 15px;">
         <strong>📱</strong><br>
         <strong>Frontend MAUI</strong><br>
-<<<<<<< HEAD
-        <small>Windows, macOS, Linux, Android, iOS</small>
-=======
         <small>Windows, macOS, Android, iOS</small>
->>>>>>> feature/interfaz-y-reconstruccion
       </td>
       <td align="center" width="200" style="padding: 15px;">
         <strong>📈</strong><br>
@@ -162,21 +158,12 @@
       </ul>
     </td>
     <td valign="top" width="33%">
-<<<<<<< HEAD
-      <h3>📱 Frontend (.NET MAUI)</h3>
-      <ul>
-        <li>.NET MAUI 10</li>
-        <li>Multiplataforma (Windows, macOS, Linux, Android, iOS)</li>
-        <li>HttpClient (consumo de API)</li>
-        <li>MVVM con Community Toolkit</li>
-=======
       <h3>📱 Frontend (.NET MAUI Blazor Hybrid)</h3>
       <ul>
         <li>.NET MAUI 10 + Blazor Hybrid</li>
         <li>UI en Razor Components (HTML/CSS) + C#</li>
         <li>Multiplataforma (Windows, macOS, Android, iOS)</li>
         <li>HttpClient con renovación automática de token</li>
->>>>>>> feature/interfaz-y-reconstruccion
       </ul>
     </td>
     <td valign="top" width="33%">
@@ -227,15 +214,6 @@ python main.py
 # Documentación interactiva: http://localhost:8000/docs</code>
 </pre>
 
-<<<<<<< HEAD
-<h3>Frontend (Cliente .NET MAUI) <span style="background-color: #ffcc00; color: #333; padding: 2px 8px; border-radius: 4px; font-size: 0.7em;">En desarrollo</span></h3>
-<pre>
-<code>cd client
-dotnet build
-dotnet run --project DesktopManagerStock.csproj</code>
-</pre>
-<p><del>O abre la solución en Visual Studio 2022 y ejecuta.</del> <strong>Esta sección está en desarrollo activo.</strong></p>
-=======
 <h3>Frontend (Cliente .NET MAUI Blazor Hybrid) <span style="background-color: #2fbf71; color: #08160f; padding: 2px 8px; border-radius: 4px; font-size: 0.7em;">Disponible</span></h3>
 <pre>
 <code>cd client
@@ -244,8 +222,7 @@ dotnet restore
 dotnet build -f net10.0-windows10.0.19041.0   # o net10.0-maccatalyst / net10.0-android / net10.0-ios
 dotnet run -f net10.0-windows10.0.19041.0</code>
 </pre>
-<p>UI en HTML/CSS (Razor Components) dentro de un <code>BlazorWebView</code> nativo — multiplataforma: Windows, macOS (Mac Catalyst), Android e iOS desde el mismo código. Ver <a href="client/README.md">client/README.md</a> para requisitos por plataforma, configuración de la URL de la API y notas sobre emuladores/dispositivos físicos.</p>
->>>>>>> feature/interfaz-y-reconstruccion
+<p>UI en HTML/CSS (Razor Components) dentro de un <code>BlazorWebView</code> nativo — multiplataforma: Windows, macOS (Mac Catalyst), Android e iOS desde el mismo código. Ver <a href="docs/cliente.md">docs/cliente.md</a> para requisitos por plataforma, configuración de la URL de la API y notas sobre emuladores/dispositivos físicos.</p>
 
 <h2>🐳 Despliegue con Docker</h2>
 
@@ -381,6 +358,13 @@ pytest tests/ -v</code>
 
 <hr>
 
+<h2>📚 Documentación adicional</h2>
+
+<ul>
+  <li><a href="docs/cliente.md"><strong>Guía del cliente .NET MAUI</strong></a> – compilación, configuración de la API, estructura del proyecto y notas para desarrolladores.</li>
+  <li><a href="docs/MEJORAS.md"><strong>Mejoras y correcciones aplicadas</strong></a> – resumen de bugs críticos, de seguridad y funcionalidades agregadas.</li>
+</ul>
+
 <h2>🤝 Contribuir</h2>
 
 <ol>
@@ -394,3 +378,4 @@ pytest tests/ -v</code>
 <h2>📄 Licencia</h2>
 
 <p><b>APACHE 2.0</b> - ver archivo <a href="LICENSE">LICENSE</a></p>
+```

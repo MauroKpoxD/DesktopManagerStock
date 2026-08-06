@@ -7,42 +7,21 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 
 from app.core.database import get_db
-<<<<<<< HEAD
-from app.core.security import authenticate_user, create_access_token, get_password_hash
-from app.schemas.usuario import UsuarioCreate, Usuario, Token
-=======
 from app.core.security import authenticate_user, create_access_token, get_password_hash, get_current_active_user
 from app.schemas.usuario import UsuarioCreate, Usuario, Token, PerfilUpdate, CambioPassword
->>>>>>> feature/interfaz-y-reconstruccion
 from app.models.usuario import UsuarioDB
 from app.core.config import settings
 from app.core.roles import Rol
 from app.core.logging_config import get_logger
 from app.core.rate_limiter import limiter
 from app.services.refresh_token_service import crear_refresh_token, revocar_refresh_token, rotar_refresh_token
-<<<<<<< HEAD
-from app.core.exceptions import ConflictError, AuthenticationError
-=======
 from app.services.usuario_service import actualizar_perfil_propio, cambiar_password_propio
 from app.core.exceptions import ConflictError
->>>>>>> feature/interfaz-y-reconstruccion
 from app.schemas.auth import RefreshTokenRequest
 
 router = APIRouter(prefix="/api/v1/auth", tags=["autenticación"])
 logger = get_logger(__name__)
 
-<<<<<<< HEAD
-@router.post("/register", response_model=Usuario, status_code=status.HTTP_200_OK)
-@limiter.limit(settings.register_rate_limit)
-def register(request: Request, usuario: UsuarioCreate, db: Session = Depends(get_db)):
-    try:
-        if db.query(UsuarioDB).filter(UsuarioDB.username == usuario.username).first():
-            raise ConflictError("Nombre de usuario ya registrado")
-        if db.query(UsuarioDB).filter(UsuarioDB.email == usuario.email).first():
-            raise ConflictError("Email ya registrado")
-    except ConflictError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-=======
 # Nota: las excepciones de dominio (ConflictError, AuthenticationError, etc.)
 # ya no se capturan manualmente aquí; hay manejadores globales registrados en
 # main.py que las traducen al HTTPException correspondiente.
@@ -54,7 +33,6 @@ def register(request: Request, usuario: UsuarioCreate, db: Session = Depends(get
         raise ConflictError("Nombre de usuario ya registrado")
     if db.query(UsuarioDB).filter(UsuarioDB.email == usuario.email).first():
         raise ConflictError("Email ya registrado")
->>>>>>> feature/interfaz-y-reconstruccion
 
     hashed = get_password_hash(usuario.password)
     db_usuario = UsuarioDB(
@@ -93,27 +71,6 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db
 
 @router.post("/refresh", response_model=Token)
 def refresh_token_endpoint(request_data: RefreshTokenRequest, db: Session = Depends(get_db)):
-<<<<<<< HEAD
-    try:
-        usuario, nuevo_token_obj = rotar_refresh_token(db, request_data.refresh_token)
-        access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
-        access_token = create_access_token(data={"sub": usuario.username}, expires_delta=access_token_expires)
-        return {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "refresh_token": nuevo_token_obj.token
-        }
-    except AuthenticationError as e:
-        raise HTTPException(status_code=401, detail=str(e))
-
-@router.post("/logout")
-def logout(request_data: RefreshTokenRequest, db: Session = Depends(get_db)):
-    try:
-        revocar_refresh_token(db, request_data.refresh_token)
-        return {"mensaje": "Sesión cerrada exitosamente"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-=======
     usuario, nuevo_token_obj = rotar_refresh_token(db, request_data.refresh_token)
     access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
     access_token = create_access_token(data={"sub": usuario.username}, expires_delta=access_token_expires)
@@ -159,4 +116,3 @@ def cambiar_mi_password(
     dispositivos."""
     cambiar_password_propio(db, current_user, datos)
     return {"mensaje": "Contraseña actualizada correctamente. Vuelve a iniciar sesión en tus otros dispositivos."}
->>>>>>> feature/interfaz-y-reconstruccion
