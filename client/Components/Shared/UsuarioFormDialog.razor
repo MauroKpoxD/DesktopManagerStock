@@ -1,0 +1,125 @@
+@inject UsuarioService UsuarioService
+
+@if (Show)
+{
+    <div class="modal-backdrop" tabindex="-1" autofocus @onkeydown="OnKeyDown">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2>Nuevo usuario</h2>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <div class="alert alert-error">@_error</div>
+            }
+
+            <EditForm Model="_formModel" OnValidSubmit="GuardarAsync">
+                <div class="field">
+                    <label>Nombre de usuario</label>
+                    <input type="text" @bind="_username" disabled="@_guardando" />
+                </div>
+                <div class="field">
+                    <label>Email</label>
+                    <input type="email" @bind="_email" disabled="@_guardando" />
+                </div>
+                <div class="field">
+                    <label>Contraseña</label>
+                    <input type="password" @bind="_password" disabled="@_guardando" />
+                    <span style="color: var(--text-muted); font-size: .78rem;">
+                        Mínimo 8 caracteres, con mayúscula, número y carácter especial.
+                    </span>
+                </div>
+                <div class="field">
+                    <label>Rol</label>
+                    <select @bind="_rol" disabled="@_guardando">
+                        <option value="lector">Lector (solo consulta)</option>
+                        <option value="editor">Editor (gestiona productos y stock)</option>
+                        <option value="admin">Admin (control total)</option>
+                    </select>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost" @onclick="Cancelar" disabled="@_guardando">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" disabled="@_guardando">
+                        @(_guardando ? "Creando…" : "Crear usuario")
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Show { get; set; }
+    [Parameter] public EventCallback OnCreado { get; set; }
+    [Parameter] public EventCallback OnCancelar { get; set; }
+
+    private string _username = string.Empty;
+    private string _email = string.Empty;
+    private string _password = string.Empty;
+    private string _rol = "lector";
+    private bool _guardando;
+    private string? _error;
+    private bool _mostrabaAntes;
+    private readonly object _formModel = new();
+
+    protected override void OnParametersSet()
+    {
+        // Reinicia el formulario solo cuando el diálogo pasa de cerrado a
+        // abierto, no en cada re-render del padre mientras está abierto.
+        if (Show && !_mostrabaAntes)
+        {
+            _username = string.Empty;
+            _email = string.Empty;
+            _password = string.Empty;
+            _rol = "lector";
+            _error = null;
+        }
+        _mostrabaAntes = Show;
+    }
+
+    private async Task GuardarAsync()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_username) || string.IsNullOrWhiteSpace(_email) || string.IsNullOrWhiteSpace(_password))
+        {
+            _error = "Completá usuario, email y contraseña.";
+            return;
+        }
+
+        _guardando = true;
+        try
+        {
+            await UsuarioService.CrearAsync(new RegistroRequest
+            {
+                Username = _username,
+                Email = _email,
+                Password = _password,
+                Rol = _rol,
+            });
+            await OnCreado.InvokeAsync();
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _guardando = false;
+        }
+    }
+
+    private async Task Cancelar()
+    {
+        _error = null;
+        await OnCancelar.InvokeAsync();
+    }
+
+    private async Task OnKeyDown(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && !_guardando)
+        {
+            await Cancelar();
+        }
+    }
+}

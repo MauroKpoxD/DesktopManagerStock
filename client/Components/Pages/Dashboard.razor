@@ -1,0 +1,295 @@
+@inject ProductoService ProductoService
+@inject MovimientoService MovimientoService
+@inject AppState AppState
+@inject NavigationState NavState
+@inject AlertaStockService AlertaStockService
+@inject ToastService ToastService
+
+<div class="page-header">
+    <h1>Hola, @AppState.UsuarioActual?.Username 👋</h1>
+</div>
+<p class="dashboard-welcome">Este es el resumen de tu inventario.</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-error">@_error</div>
+}
+
+<div class="quick-actions">
+    <div class="quick-action" @onclick="() => NavState.IrA(Seccion.Productos)">
+        <Icon Name="box" />
+        <span>Ver productos</span>
+    </div>
+    <div class="quick-action" @onclick="() => NavState.IrA(Seccion.Movimientos)">
+        <Icon Name="refresh" />
+        <span>Movimientos</span>
+    </div>
+    <div class="quick-action" @onclick="() => NavState.IrA(Seccion.StockBajo)">
+        <Icon Name="alert-triangle" />
+        <span>Stock bajo</span>
+    </div>
+    @if (AppState.PuedeEditar)
+    {
+        <div class="quick-action" @onclick="() => NavState.IrA(Seccion.Reportes)">
+            <Icon Name="file-text" />
+            <span>Generar reporte</span>
+        </div>
+    }
+</div>
+
+@if (_cargando)
+{
+    <div class="loading-inline"><span class="spinner"></span> Cargando resumen…</div>
+}
+else
+{
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-card-icon"><Icon Name="box" CssClass="" /></div>
+            <div class="stat-value">@_totalProductos</div>
+            <div class="stat-label">Productos activos</div>
+        </div>
+        <div class="stat-card success">
+            <div class="stat-card-icon"><Icon Name="dollar-sign" CssClass="" /></div>
+            <div class="stat-value">@_valorInventario.ToString("C0")</div>
+            <div class="stat-label">Valor del inventario</div>
+        </div>
+        <div class="stat-card @(_productosStockBajo.Count > 0 ? "warning" : "")">
+            <div class="stat-card-icon"><Icon Name="alert-triangle" CssClass="" /></div>
+            <div class="stat-value">@_productosStockBajo.Count</div>
+            <div class="stat-label">Con stock bajo</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-icon"><Icon Name="refresh" CssClass="" /></div>
+            <div class="stat-value">@_totalMovimientos</div>
+            <div class="stat-label">Movimientos registrados</div>
+        </div>
+    </div>
+
+    <div class="dashboard-columns">
+        <div class="card">
+            <h3>Actividad de los últimos 7 días</h3>
+            @if (_actividadSemana.All(d => d.Cantidad == 0))
+            {
+                <div class="empty-state">
+                    <div class="empty-state-icon"><Icon Name="bar-chart" CssClass="" /></div>
+                    <div class="empty-state-title">Sin movimientos en la última semana.</div>
+                </div>
+            }
+            else
+            {
+                <div class="mini-chart">
+                    @foreach (var dia in _actividadSemana)
+                    {
+                        <div class="mini-chart-bar-wrap" title="@($"{dia.Cantidad} movimiento(s) el {dia.Fecha:dd/MM}")">
+                            <div class="mini-chart-bar" style="height: @(AlturaBarra(dia.Cantidad))%"></div>
+                            <span class="mini-chart-label">@dia.Etiqueta</span>
+                        </div>
+                    }
+                </div>
+            }
+
+            <h3 style="margin-top: 1.5rem;">Actividad reciente</h3>
+            @if (_movimientosRecientes.Count == 0)
+            {
+                <div class="empty-state">
+                    <div class="empty-state-icon"><Icon Name="refresh" CssClass="" /></div>
+                    <div class="empty-state-title">Todavía no hay movimientos registrados.</div>
+                </div>
+            }
+            else
+            {
+                <ul class="recent-list">
+                    @foreach (var m in _movimientosRecientes)
+                    {
+                        <li class="recent-item">
+                            <div class="recent-main">
+                                <span>@NombreProducto(m.ProductoId)</span>
+                                <span class="recent-sub">@m.FechaHora.ToLocalTime().ToString("dd/MM HH:mm")</span>
+                            </div>
+                            @if (m.Tipo == "entrada")
+                            {
+                                <span class="badge badge-entrada">+@m.Cantidad</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-salida">-@m.Cantidad</span>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+
+        <div class="card">
+            <h3>Valor de inventario por categoría</h3>
+            @if (_valorPorCategoria.Count == 0)
+            {
+                <div class="empty-state">
+                    <div class="empty-state-icon"><Icon Name="box" CssClass="" /></div>
+                    <div class="empty-state-title">Todavía no hay productos con valor para mostrar.</div>
+                </div>
+            }
+            else
+            {
+                <div class="hbar-chart">
+                    @foreach (var (nombreCategoria, valor) in _valorPorCategoria)
+                    {
+                        <div class="hbar-row">
+                            <span class="hbar-label">@nombreCategoria</span>
+                            <div class="hbar-track">
+                                <div class="hbar-fill" style="width: @(AnchoBarraCategoria(valor))%"></div>
+                            </div>
+                            <span class="hbar-valor">@valor.ToString("C0")</span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="card">
+            <h3>Para reponer</h3>
+            @if (_productosStockBajo.Count == 0)
+            {
+                <div class="empty-state">
+                    <div class="empty-state-icon"><Icon Name="check-circle" CssClass="" /></div>
+                    <div class="empty-state-title">Todo en orden por ahora.</div>
+                </div>
+            }
+            else
+            {
+                <ul class="recent-list">
+                    @foreach (var p in _productosStockBajo.Take(8))
+                    {
+                        <li class="recent-item">
+                            <div class="recent-main">
+                                <span>@p.Nombre</span>
+                                <span class="recent-sub">Mínimo: @p.StockMinimo</span>
+                            </div>
+                            <span class="badge @(p.Stock <= 0 ? "badge-out" : "badge-low")">@p.Stock</span>
+                            @if (AppState.PuedeEditar)
+                            {
+                                <button class="btn btn-sm btn-ghost btn-icon" title="Reabastecer" @onclick="() => AbrirReabastecer(p)">
+                                    <Icon Name="plus" CssClass="" />
+                                </button>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+}
+
+<StockAdjustDialog Show="_mostrarReabastecer" Producto="_productoAReabastecer"
+    OnAplicado="OnReabastecidoAsync" OnCancelar="() => _mostrarReabastecer = false" />
+
+@code {
+    private record DiaActividad(DateOnly Fecha, string Etiqueta, int Cantidad);
+
+    private bool _mostrarReabastecer;
+    private Producto? _productoAReabastecer;
+
+    private bool _cargando = true;
+    private string? _error;
+    private int _totalProductos;
+    private decimal _valorInventario;
+    private int _totalMovimientos;
+    private List<Producto> _productosStockBajo = new();
+    private List<Movimiento> _movimientosRecientes = new();
+    private List<DiaActividad> _actividadSemana = new();
+    private Dictionary<int, string> _nombresProductos = new();
+    private List<(string Categoria, decimal Valor)> _valorPorCategoria = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var productos = await ProductoService.ListarAsync(0, 500);
+            _totalProductos = productos.Total;
+            _valorInventario = productos.Items.Sum(p => p.Precio * p.Stock);
+            _nombresProductos = productos.Items.ToDictionary(p => p.Id, p => p.Nombre);
+            _valorPorCategoria = productos.Items
+                .GroupBy(p => string.IsNullOrWhiteSpace(p.Categoria) ? "Sin categoría" : p.Categoria)
+                .Select(g => (Categoria: g.Key, Valor: g.Sum(p => p.Precio * p.Stock)))
+                .OrderByDescending(x => x.Valor)
+                .Take(6)
+                .ToList();
+
+            _productosStockBajo = await ProductoService.ListarStockBajoAsync();
+            AlertaStockService.Actualizar(_productosStockBajo.Count);
+
+            var movimientos = await MovimientoService.ListarAsync(0, 8);
+            _movimientosRecientes = movimientos.Items;
+            _totalMovimientos = movimientos.Total;
+
+            // Se trae una tanda más grande (no solo las 8 recientes) para
+            // poder agrupar por día y armar el gráfico de la última semana.
+            var movimientosParaGrafico = await MovimientoService.ListarAsync(0, 300);
+            _actividadSemana = CalcularActividadSemana(movimientosParaGrafico.Items);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _cargando = false;
+        }
+    }
+
+    private static readonly string[] DiasAbreviados = { "Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb" };
+
+    private static List<DiaActividad> CalcularActividadSemana(List<Movimiento> movimientos)
+    {
+        var hoy = DateOnly.FromDateTime(DateTime.Now);
+        var dias = new List<DiaActividad>();
+        for (int i = 6; i >= 0; i--)
+        {
+            var fecha = hoy.AddDays(-i);
+            var cantidad = movimientos.Count(m => DateOnly.FromDateTime(m.FechaHora.ToLocalTime()) == fecha);
+            var etiqueta = DiasAbreviados[(int)fecha.DayOfWeek];
+            dias.Add(new DiaActividad(fecha, etiqueta, cantidad));
+        }
+        return dias;
+    }
+
+    private int AlturaBarra(int cantidad)
+    {
+        var max = _actividadSemana.Count > 0 ? _actividadSemana.Max(d => d.Cantidad) : 0;
+        if (max == 0) return 4;
+        var porcentaje = (int)Math.Round(cantidad * 100.0 / max);
+        return Math.Max(porcentaje, cantidad > 0 ? 6 : 4);
+    }
+
+    private int AnchoBarraCategoria(decimal valor)
+    {
+        var max = _valorPorCategoria.Count > 0 ? _valorPorCategoria.Max(c => c.Valor) : 0;
+        if (max == 0) return 2;
+        return Math.Max((int)Math.Round((double)(valor * 100 / max)), 2);
+    }
+
+    private string NombreProducto(int productoId) =>
+        _nombresProductos.TryGetValue(productoId, out var nombre) ? nombre : $"#{productoId}";
+
+    private void AbrirReabastecer(Producto p)
+    {
+        _productoAReabastecer = p;
+        _mostrarReabastecer = true;
+    }
+
+    private async Task OnReabastecidoAsync(AjusteStockResultado resultado)
+    {
+        _mostrarReabastecer = false;
+        try
+        {
+            _productosStockBajo = await ProductoService.ListarStockBajoAsync();
+            AlertaStockService.Actualizar(_productosStockBajo.Count);
+            ToastService.Exito("Stock actualizado correctamente.");
+        }
+        catch (ApiException ex)
+        {
+            ToastService.Error(ex.Message);
+        }
+    }
+}

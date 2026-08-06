@@ -23,16 +23,24 @@ def obtener_movimiento_por_id(db: Session, movimiento_id: int) -> Optional[Movim
         raise NotFoundError(f"Movimiento con ID {movimiento_id} no encontrado")
     return mov
 
+<<<<<<< HEAD
 def listar_movimientos(
     db: Session,
     skip: int = 0,
     limit: int = 100,
+=======
+def _filtrar_movimientos(
+    query,
+>>>>>>> feature/interfaz-y-reconstruccion
     producto_id: Optional[int] = None,
     tipo: Optional[str] = None,
     fecha_desde: Optional[date] = None,
     fecha_hasta: Optional[date] = None
 ):
+<<<<<<< HEAD
     query = db.query(MovimientoDB)
+=======
+>>>>>>> feature/interfaz-y-reconstruccion
     if producto_id is not None:
         query = query.filter(MovimientoDB.producto_id == producto_id)
     if tipo is not None:
@@ -42,8 +50,35 @@ def listar_movimientos(
     if fecha_hasta:
         # Para incluir todo el día, se suma un día y se usa <
         query = query.filter(MovimientoDB.fecha_hora < fecha_hasta + timedelta(days=1))
+<<<<<<< HEAD
     return query.order_by(MovimientoDB.fecha_hora.desc()).offset(skip).limit(limit).all()
 
+=======
+    return query
+
+def listar_movimientos(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+    producto_id: Optional[int] = None,
+    tipo: Optional[str] = None,
+    fecha_desde: Optional[date] = None,
+    fecha_hasta: Optional[date] = None
+):
+    query = _filtrar_movimientos(db.query(MovimientoDB), producto_id, tipo, fecha_desde, fecha_hasta)
+    return query.order_by(MovimientoDB.fecha_hora.desc()).offset(skip).limit(limit).all()
+
+def contar_movimientos(
+    db: Session,
+    producto_id: Optional[int] = None,
+    tipo: Optional[str] = None,
+    fecha_desde: Optional[date] = None,
+    fecha_hasta: Optional[date] = None
+) -> int:
+    query = _filtrar_movimientos(db.query(MovimientoDB), producto_id, tipo, fecha_desde, fecha_hasta)
+    return query.count()
+
+>>>>>>> feature/interfaz-y-reconstruccion
 def obtener_movimientos_por_rango_ids(db: Session, id_desde: int, id_hasta: int):
     if id_desde > id_hasta:
         raise ValidationError("El ID desde debe ser menor o igual al ID hasta")

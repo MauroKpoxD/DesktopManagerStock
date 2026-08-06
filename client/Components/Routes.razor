@@ -1,0 +1,54 @@
+@using DesktopManagerStock.Client.Components.Layout
+@using DesktopManagerStock.Client.Components.Pages
+@inject AuthService AuthService
+@inject AppState AppState
+@implements IDisposable
+
+@if (_mostrarSplash)
+{
+    <BootSplash FadingOut="_splashFadingOut" />
+}
+else if (!AppState.EstaAutenticado)
+{
+    <Login />
+}
+else
+{
+    <MainLayout />
+}
+
+@if (!_mostrarSplash)
+{
+    <ToastContainer />
+}
+
+@code {
+    private bool _mostrarSplash = true;
+    private bool _splashFadingOut;
+
+    protected override async Task OnInitializedAsync()
+    {
+        AppState.OnChange += StateHasChanged;
+
+        // La animación de arranque (ver BootSplash.razor) y la restauración de
+        // sesión (con el refresh_token guardado, si había uno) corren en
+        // paralelo: así la animación no hace más lenta a la app, y si
+        // restaurar la sesión tarda un poco, el usuario ve la animación en
+        // vez de una pantalla en blanco.
+        var restaurarSesion = AuthService.RestaurarSesionAsync();
+        var duracionMinimaSplash = Task.Delay(2200);
+        await Task.WhenAll(restaurarSesion, duracionMinimaSplash);
+
+        // Fundido de salida antes de mostrar Login/MainLayout, para que la
+        // transición no sea un corte seco.
+        _splashFadingOut = true;
+        StateHasChanged();
+        await Task.Delay(380);
+        _mostrarSplash = false;
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

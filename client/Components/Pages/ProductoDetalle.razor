@@ -1,0 +1,136 @@
+@inject ProductoService ProductoService
+@inject MovimientoService MovimientoService
+@inject NavigationState NavState
+
+<div class="page-header">
+    <div style="display:flex; align-items:center; gap:.75rem;">
+        <button class="btn btn-ghost btn-sm" @onclick="Volver">← Volver</button>
+        <h1 style="margin:0;">@(_producto?.Nombre ?? "Producto")</h1>
+        @if (_producto is not null && !_producto.Activo)
+        {
+            <span class="badge badge-inactive">Desactivado</span>
+        }
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-error">@_error</div>
+}
+
+@if (_cargando)
+{
+    <div class="loading-inline"><span class="spinner"></span> Cargando producto…</div>
+}
+else if (_producto is not null)
+{
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-card-icon"><Icon Name="box" CssClass="" /></div>
+            <div class="stat-value">@_producto.Stock</div>
+            <div class="stat-label">Stock actual</div>
+        </div>
+        <div class="stat-card success">
+            <div class="stat-card-icon"><Icon Name="dollar-sign" CssClass="" /></div>
+            <div class="stat-value">@_producto.Precio.ToString("C2")</div>
+            <div class="stat-label">Precio unitario</div>
+        </div>
+        <div class="stat-card @(_producto.NivelStock is "low" or "out" ? "warning" : "")">
+            <div class="stat-card-icon"><Icon Name="alert-triangle" CssClass="" /></div>
+            <div class="stat-value">@_producto.StockMinimo / @_producto.StockMaximo</div>
+            <div class="stat-label">Mín. / Máx.</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Ficha del producto</h3>
+        <div class="form-grid" style="margin-top:.5rem;">
+            <div><span style="color:var(--text-muted); font-size:.8rem;">Categoría</span><br />@(_producto.Categoria ?? "—")</div>
+            <div><span style="color:var(--text-muted); font-size:.8rem;">SKU</span><br />@(_producto.Sku ?? "—")</div>
+            <div><span style="color:var(--text-muted); font-size:.8rem;">Proveedor</span><br />@(_producto.ProveedorNombre ?? "—")</div>
+            <div><span style="color:var(--text-muted); font-size:.8rem;">Contacto del proveedor</span><br />@(_producto.ProveedorContacto ?? "—")</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Historial de movimientos</h3>
+        @if (_movimientos.Count == 0)
+        {
+            <div class="empty-state">
+                <div class="empty-state-icon"><Icon Name="refresh" CssClass="" /></div>
+                <div class="empty-state-title">Este producto todavía no tiene movimientos registrados.</div>
+            </div>
+        }
+        else
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Cantidad</th>
+                        <th>Stock resultante</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in _movimientos)
+                    {
+                        <tr>
+                            <td>@m.FechaHora.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                @if (m.Tipo == "entrada")
+                                {
+                                    <span class="badge badge-entrada">Entrada</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-salida">Salida</span>
+                                }
+                            </td>
+                            <td>@m.Cantidad</td>
+                            <td>@m.StockResultante</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="pagination">Mostrando @_movimientos.Count de @_totalMovimientos</div>
+        }
+    </div>
+}
+
+@code {
+    private Producto? _producto;
+    private List<Movimiento> _movimientos = new();
+    private int _totalMovimientos;
+    private bool _cargando = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var productoId = NavState.ProductoIdParametro;
+        if (!productoId.HasValue)
+        {
+            _error = "No se especificó qué producto mostrar.";
+            _cargando = false;
+            return;
+        }
+
+        try
+        {
+            _producto = await ProductoService.ObtenerAsync(productoId.Value);
+            var pagina = await MovimientoService.ListarAsync(0, 100, productoId: productoId.Value);
+            _movimientos = pagina.Items;
+            _totalMovimientos = pagina.Total;
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _cargando = false;
+        }
+    }
+
+    private void Volver() => NavState.IrA(Seccion.Productos);
+}

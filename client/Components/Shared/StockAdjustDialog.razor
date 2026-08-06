@@ -1,0 +1,116 @@
+@inject ProductoService ProductoService
+
+@if (Show && Producto is not null)
+{
+    <div class="modal-backdrop" tabindex="-1" autofocus @onkeydown="OnKeyDown">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2>Ajustar stock — @Producto.Nombre</h2>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <div class="alert alert-error">@_error</div>
+            }
+
+            <p style="color: var(--text-muted); margin-top: -.5rem;">Stock actual: <strong>@Producto.Stock</strong></p>
+
+            <EditForm Model="_formModel" OnValidSubmit="ConfirmarAsync">
+                <div class="field">
+                    <label>Tipo de movimiento</label>
+                    <!--
+                        Bindeado a un string ("entrada"/"salida"), no a un bool:
+                        el binding de Blazor en <select> no resuelve bien tipos
+                        bool (por eso antes siempre quedaba en "Entrada" sin
+                        importar lo que se eligiera). string sí es confiable acá.
+                    -->
+                    <select @bind="_tipo" disabled="@_guardando">
+                        <option value="entrada">Entrada (sumar stock)</option>
+                        <option value="salida">Salida (restar stock)</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Cantidad</label>
+                    <input type="number" min="1" @bind="_cantidad" disabled="@_guardando" />
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost" @onclick="Cancelar" disabled="@_guardando">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" disabled="@_guardando">
+                        @(_guardando ? "Aplicando…" : "Aplicar")
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Show { get; set; }
+    [Parameter] public Producto? Producto { get; set; }
+    [Parameter] public EventCallback<AjusteStockResultado> OnAplicado { get; set; }
+    [Parameter] public EventCallback OnCancelar { get; set; }
+
+    private string _tipo = "entrada";
+    private int _cantidad = 1;
+    private bool _guardando;
+    private string? _error;
+    private int? _productoIdPrevio;
+    private readonly object _formModel = new();
+
+    protected override void OnParametersSet()
+    {
+        // Solo reinicializar el formulario cuando el diálogo se ABRE (o
+        // cambia de producto), no en cada re-render del padre: si no,
+        // cualquier cambio que el usuario ya hizo en el formulario (tipo,
+        // cantidad) se pisaría solo con que el componente padre se
+        // re-renderice por cualquier otro motivo mientras el diálogo está abierto.
+        var idActual = Show ? Producto?.Id : null;
+        if (idActual != _productoIdPrevio)
+        {
+            _productoIdPrevio = idActual;
+            if (Show)
+            {
+                _cantidad = 1;
+                _tipo = "entrada";
+                _error = null;
+            }
+        }
+    }
+
+    private async Task ConfirmarAsync()
+    {
+        _error = null;
+        if (_cantidad <= 0)
+        {
+            _error = "La cantidad debe ser mayor a cero.";
+            return;
+        }
+
+        _guardando = true;
+        try
+        {
+            var esEntrada = _tipo == "entrada";
+            await ProductoService.AjustarStockAsync(Producto!.Id, _cantidad, esEntrada: esEntrada);
+            await OnAplicado.InvokeAsync(new AjusteStockResultado(Producto!.Id, _cantidad, esEntrada));
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _guardando = false;
+        }
+    }
+
+    private async Task Cancelar() => await OnCancelar.InvokeAsync();
+
+    private async Task OnKeyDown(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && !_guardando)
+        {
+            await Cancelar();
+        }
+    }
+}

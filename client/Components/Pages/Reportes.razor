@@ -1,0 +1,123 @@
+@inject ReporteService ReporteService
+@inject ProductoService ProductoService
+
+<div class="page-header">
+    <h1>Reportes</h1>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-error">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_mensaje))
+{
+    <div class="alert alert-success">@_mensaje</div>
+}
+
+<div class="card">
+    <h3>Catálogo de productos</h3>
+    <p style="color: var(--text-muted);">Listado completo de productos activos, con precio y stock.</p>
+    <div class="actions">
+        <button class="btn btn-ghost" disabled="@_generando" @onclick='() => GenerarAsync(ReporteService.DescargarReporteProductosAsync(FormatoReporte.Pdf))'>PDF</button>
+        <button class="btn btn-ghost" disabled="@_generando" @onclick='() => GenerarAsync(ReporteService.DescargarReporteProductosAsync(FormatoReporte.Excel))'>Excel</button>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Stock bajo</h3>
+    <p style="color: var(--text-muted);">Productos en o por debajo de su stock mínimo (o el umbral que definas).</p>
+    <div class="field" style="max-width: 220px;">
+        <label>Umbral (opcional)</label>
+        <input type="number" min="0" @bind="_umbralTexto" />
+    </div>
+    <div class="actions">
+        <button class="btn btn-ghost" disabled="@_generando" @onclick='() => GenerarAsync(ReporteService.DescargarReporteStockBajoAsync(FormatoReporte.Pdf, UmbralActual()))'>PDF</button>
+        <button class="btn btn-ghost" disabled="@_generando" @onclick='() => GenerarAsync(ReporteService.DescargarReporteStockBajoAsync(FormatoReporte.Excel, UmbralActual()))'>Excel</button>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Movimientos</h3>
+    <p style="color: var(--text-muted);">Historial de entradas y salidas, opcionalmente filtrado por fecha o producto.</p>
+    <div class="form-grid">
+        <div class="field">
+            <label>Desde</label>
+            <input type="date" @bind="_fechaDesde" />
+        </div>
+        <div class="field">
+            <label>Hasta</label>
+            <input type="date" @bind="_fechaHasta" />
+        </div>
+        <div class="field">
+            <label>Producto (opcional)</label>
+            <select @bind="_productoIdFiltro">
+                <option value="">Todos</option>
+                @foreach (var p in _productos)
+                {
+                    <option value="@p.Id">@p.Nombre</option>
+                }
+            </select>
+        </div>
+    </div>
+    <div class="actions">
+        <button class="btn btn-ghost" disabled="@_generando" @onclick='() => GenerarAsync(ReporteService.DescargarReporteMovimientosAsync(FormatoReporte.Pdf, FechaDesdeActual(), FechaHastaActual(), ProductoIdActual()))'>PDF</button>
+        <button class="btn btn-ghost" disabled="@_generando" @onclick='() => GenerarAsync(ReporteService.DescargarReporteMovimientosAsync(FormatoReporte.Excel, FechaDesdeActual(), FechaHastaActual(), ProductoIdActual()))'>Excel</button>
+    </div>
+</div>
+
+@code {
+    private bool _generando;
+    private string? _error;
+    private string? _mensaje;
+    private string _umbralTexto = "";
+    private DateTime? _fechaDesde;
+    private DateTime? _fechaHasta;
+    private string _productoIdFiltro = "";
+    private List<Producto> _productos = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var pagina = await ProductoService.ListarAsync(0, 500);
+            _productos = pagina.Items;
+        }
+        catch
+        {
+            // El filtro de producto queda vacío, pero los reportes sin
+            // filtrar por producto igual se pueden generar.
+        }
+    }
+
+    private int? UmbralActual() => int.TryParse(_umbralTexto, out var u) ? u : null;
+    private DateOnly? FechaDesdeActual() => _fechaDesde.HasValue ? DateOnly.FromDateTime(_fechaDesde.Value) : null;
+    private DateOnly? FechaHastaActual() => _fechaHasta.HasValue ? DateOnly.FromDateTime(_fechaHasta.Value) : null;
+    private int? ProductoIdActual() => int.TryParse(_productoIdFiltro, out var id) ? id : null;
+
+    private async Task GenerarAsync(Task<string> descarga)
+    {
+        _error = null;
+        _mensaje = null;
+        _generando = true;
+        try
+        {
+            var ruta = await descarga;
+            _mensaje = "Reporte generado. Abriéndolo con el visor del sistema…";
+            await Launcher.Default.OpenAsync(new OpenFileRequest("Reporte", new ReadOnlyFile(ruta)));
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            // Launcher.OpenAsync puede fallar si no hay una app asociada a
+            // PDF/Excel instalada en el sistema.
+            _error = $"El reporte se generó pero no se pudo abrir automáticamente: {ex.Message}";
+        }
+        finally
+        {
+            _generando = false;
+        }
+    }
+}

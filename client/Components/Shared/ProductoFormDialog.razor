@@ -1,0 +1,240 @@
+@inject ProductoService ProductoService
+
+@if (Show)
+{
+    <div class="modal-backdrop" tabindex="-1" autofocus @onkeydown="OnKeyDown">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2>@(EsEdicion ? "Editar producto" : "Nuevo producto")</h2>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <div class="alert alert-error">@_error</div>
+            }
+
+            <EditForm Model="_formModel" OnValidSubmit="GuardarAsync">
+                <div class="field">
+                    <label>Nombre</label>
+                    <input type="text" @bind="_nombre" disabled="@_guardando" />
+                </div>
+                <div class="form-grid">
+                    <div class="field">
+                        <label>Categoría (opcional)</label>
+                        <input type="text" @bind="_categoria" list="categorias-datalist" placeholder="Ej: Almacén, Limpieza…" disabled="@_guardando" />
+                        <datalist id="categorias-datalist">
+                            @foreach (var c in _categoriasExistentes)
+                            {
+                                <option value="@c" />
+                            }
+                        </datalist>
+                    </div>
+                    <div class="field">
+                        <label>SKU / Código (opcional)</label>
+                        <input type="text" @bind="_sku" placeholder="Ej: MOU-001" disabled="@_guardando" />
+                    </div>
+                    <div class="field">
+                        <label>Precio</label>
+                        <input type="number" step="0.01" min="0" @bind="_precio" disabled="@_guardando" />
+                    </div>
+                    @if (!EsEdicion)
+                    {
+                        <div class="field">
+                            <label>Stock inicial</label>
+                            <input type="number" min="0" @bind="_stockInicial" disabled="@_guardando" />
+                        </div>
+                    }
+                    <div class="field">
+                        <label>Stock mínimo</label>
+                        <input type="number" min="0" @bind="_stockMinimo" disabled="@_guardando" />
+                    </div>
+                    <div class="field">
+                        <label>Stock máximo</label>
+                        <input type="number" min="0" @bind="_stockMaximo" disabled="@_guardando" />
+                    </div>
+                </div>
+
+                <h3>Proveedor (opcional)</h3>
+                <div class="form-grid">
+                    <div class="field">
+                        <label>Nombre</label>
+                        <input type="text" @bind="_proveedorNombre" disabled="@_guardando" />
+                    </div>
+                    <div class="field">
+                        <label>Contacto</label>
+                        <input type="text" @bind="_proveedorContacto" placeholder="Teléfono o email" disabled="@_guardando" />
+                    </div>
+                </div>
+
+                @if (EsEdicion && EsAdmin)
+                {
+                    <div class="field">
+                        <label><input type="checkbox" @bind="_activo" disabled="@_guardando" /> Producto activo</label>
+                    </div>
+                }
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost" @onclick="Cancelar" disabled="@_guardando">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" disabled="@_guardando">
+                        @(_guardando ? "Guardando…" : "Guardar")
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Show { get; set; }
+    [Parameter] public Producto? ProductoExistente { get; set; }
+    [Parameter] public bool EsAdmin { get; set; }
+    [Parameter] public EventCallback OnGuardado { get; set; }
+    [Parameter] public EventCallback OnCancelar { get; set; }
+
+    private bool EsEdicion => ProductoExistente is not null;
+
+    private string _nombre = string.Empty;
+    private string _categoria = string.Empty;
+    private string _sku = string.Empty;
+    private string _proveedorNombre = string.Empty;
+    private string _proveedorContacto = string.Empty;
+    private decimal _precio;
+    private int _stockInicial;
+    private int _stockMinimo = 5;
+    private int _stockMaximo = 100;
+    private bool _activo = true;
+    private bool _guardando;
+    private string? _error;
+    private int? _idPrevio;
+    private List<string> _categoriasExistentes = new();
+    private readonly object _formModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _categoriasExistentes = await ProductoService.ListarCategoriasAsync();
+        }
+        catch
+        {
+            // El autocompletado de categorías es un extra: si falla, el
+            // campo de texto libre sigue funcionando igual.
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        // Reinicializa el formulario solo cuando cambia el producto a editar
+        // (o al pasar de "editar" a "crear"), no en cada render.
+        if (ProductoExistente?.Id != _idPrevio)
+        {
+            _idPrevio = ProductoExistente?.Id;
+            _error = null;
+            if (ProductoExistente is not null)
+            {
+                _nombre = ProductoExistente.Nombre;
+                _categoria = ProductoExistente.Categoria ?? string.Empty;
+                _sku = ProductoExistente.Sku ?? string.Empty;
+                _proveedorNombre = ProductoExistente.ProveedorNombre ?? string.Empty;
+                _proveedorContacto = ProductoExistente.ProveedorContacto ?? string.Empty;
+                _precio = ProductoExistente.Precio;
+                _stockMinimo = ProductoExistente.StockMinimo;
+                _stockMaximo = ProductoExistente.StockMaximo;
+                _activo = ProductoExistente.Activo;
+            }
+            else
+            {
+                _nombre = string.Empty;
+                _categoria = string.Empty;
+                _sku = string.Empty;
+                _proveedorNombre = string.Empty;
+                _proveedorContacto = string.Empty;
+                _precio = 0;
+                _stockInicial = 0;
+                _stockMinimo = 5;
+                _stockMaximo = 100;
+                _activo = true;
+            }
+        }
+    }
+
+    private async Task GuardarAsync()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_nombre))
+        {
+            _error = "El nombre es obligatorio.";
+            return;
+        }
+        if (_stockMinimo > _stockMaximo)
+        {
+            _error = "El stock mínimo no puede ser mayor que el máximo.";
+            return;
+        }
+
+        _guardando = true;
+        try
+        {
+            if (EsEdicion)
+            {
+                var datos = new ProductoUpdateRequest
+                {
+                    Nombre = _nombre,
+                    Precio = _precio,
+                    StockMinimo = _stockMinimo,
+                    StockMaximo = _stockMaximo,
+                    Categoria = string.IsNullOrWhiteSpace(_categoria) ? null : _categoria.Trim(),
+                    Sku = string.IsNullOrWhiteSpace(_sku) ? null : _sku.Trim(),
+                    ProveedorNombre = string.IsNullOrWhiteSpace(_proveedorNombre) ? null : _proveedorNombre.Trim(),
+                    ProveedorContacto = string.IsNullOrWhiteSpace(_proveedorContacto) ? null : _proveedorContacto.Trim(),
+                };
+                // Solo se manda "activo" si el usuario es admin: el backend
+                // rechaza este campo (400) si lo manda un editor (ver
+                // server/app/services/producto_service.py).
+                if (EsAdmin)
+                {
+                    datos.Activo = _activo;
+                }
+                await ProductoService.ActualizarAsync(ProductoExistente!.Id, datos);
+            }
+            else
+            {
+                await ProductoService.CrearAsync(new ProductoCreateRequest
+                {
+                    Nombre = _nombre,
+                    Precio = _precio,
+                    Stock = _stockInicial,
+                    StockMinimo = _stockMinimo,
+                    StockMaximo = _stockMaximo,
+                    Categoria = string.IsNullOrWhiteSpace(_categoria) ? null : _categoria.Trim(),
+                    Sku = string.IsNullOrWhiteSpace(_sku) ? null : _sku.Trim(),
+                    ProveedorNombre = string.IsNullOrWhiteSpace(_proveedorNombre) ? null : _proveedorNombre.Trim(),
+                    ProveedorContacto = string.IsNullOrWhiteSpace(_proveedorContacto) ? null : _proveedorContacto.Trim(),
+                });
+            }
+            await OnGuardado.InvokeAsync();
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _guardando = false;
+        }
+    }
+
+    private async Task Cancelar()
+    {
+        _error = null;
+        await OnCancelar.InvokeAsync();
+    }
+
+    private async Task OnKeyDown(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && !_guardando)
+        {
+            await Cancelar();
+        }
+    }
+}

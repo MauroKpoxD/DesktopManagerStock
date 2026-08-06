@@ -164,6 +164,29 @@ def lector_headers(test_lector):
     return {"Authorization": f"Bearer {access_token}"}
 
 @pytest.fixture(scope="function")
+def test_admin(db_session):
+    from app.core.security import get_password_hash
+    db_session.query(UsuarioDB).filter(UsuarioDB.username == "testadmin").delete()
+    db_session.commit()
+    user = UsuarioDB(
+        username="testadmin",
+        email="testadmin@example.com",
+        hashed_password=get_password_hash("adminpass"),
+        rol="admin",
+        activo=True
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+@pytest.fixture(scope="function")
+def admin_headers(test_admin):
+    from app.core.security import create_access_token
+    access_token = create_access_token(data={"sub": test_admin.username})
+    return {"Authorization": f"Bearer {access_token}"}
+
+@pytest.fixture(scope="function")
 def productos_demo(db_session):
     p1 = ProductoDB(nombre="Producto A", precio=100, stock=10, stock_minimo=5, stock_maximo=50)
     p2 = ProductoDB(nombre="Producto B", precio=200, stock=2, stock_minimo=5, stock_maximo=30)

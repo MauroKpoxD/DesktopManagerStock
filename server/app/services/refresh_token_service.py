@@ -9,14 +9,21 @@ from app.models.usuario import UsuarioDB
 from app.core.exceptions import AuthenticationError
 from app.core.config import settings
 
+<<<<<<< HEAD
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
+=======
+>>>>>>> feature/interfaz-y-reconstruccion
 def generar_refresh_token() -> str:
     return secrets.token_urlsafe(64)
 
 def crear_refresh_token(db: Session, user_id: int) -> RefreshTokenDB:
     token_str = generar_refresh_token()
+<<<<<<< HEAD
     expires_at = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+=======
+    expires_at = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days)
+>>>>>>> feature/interfaz-y-reconstruccion
     db_token = RefreshTokenDB(
         token=token_str,
         user_id=user_id,

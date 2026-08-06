@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+        usesCleartextTraffic="true": Android bloquea HTTP plano (no HTTPS) por
+        defecto desde Android 9. Se habilita acá porque en desarrollo la API
+        corre en http://localhost:8000 sin certificado. ¡Sacá esto (o usá
+        HTTPS real con un certificado válido) antes de distribuir la app!
+    -->
+    <application android:allowBackup="true" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round"
+        android:supportsRtl="true" android:usesCleartextTraffic="true"></application>
+    <!--
+        INTERNET es obligatorio: sin este permiso, Android bloquea TODAS las
+        conexiones salientes de la app y cada llamada a la API fallaría con
+        un error de red silencioso, aunque el código esté perfecto.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+</manifest>

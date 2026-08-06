@@ -1,0 +1,27 @@
+<div class="pagination">
+    <span>Mostrando @Desde–@Hasta de @Total</span>
+    <button class="btn btn-sm btn-ghost" @onclick="Anterior" disabled="@(PaginaActual <= 1)">← Anterior</button>
+    <span>Página @PaginaActual de @TotalPaginas</span>
+    <button class="btn btn-sm btn-ghost" @onclick="Siguiente" disabled="@(PaginaActual >= TotalPaginas)">Siguiente →</button>
+</div>
+
+@code {
+    [Parameter] public int PaginaActual { get; set; } = 1;
+    [Parameter] public int TamanioPagina { get; set; } = 20;
+    [Parameter] public int Total { get; set; }
+    [Parameter] public EventCallback<int> OnCambiarPagina { get; set; }
+
+    private int TotalPaginas => Math.Max(1, (int)Math.Ceiling(Total / (double)TamanioPagina));
+    private int Desde => Total == 0 ? 0 : (PaginaActual - 1) * TamanioPagina + 1;
+    private int Hasta => Math.Min(PaginaActual * TamanioPagina, Total);
+
+    private async Task Anterior()
+    {
+        if (PaginaActual > 1) await OnCambiarPagina.InvokeAsync(PaginaActual - 1);
+    }
+
+    private async Task Siguiente()
+    {
+        if (PaginaActual < TotalPaginas) await OnCambiarPagina.InvokeAsync(PaginaActual + 1);
+    }
+}

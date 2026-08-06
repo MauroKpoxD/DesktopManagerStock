@@ -1,0 +1,142 @@
+@inject ProductoService ProductoService
+
+@if (Show)
+{
+    <div class="modal-backdrop" tabindex="-1" autofocus @onkeydown="OnKeyDown">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2>Importar productos desde CSV</h2>
+            </div>
+
+            @if (_resultado is null)
+            {
+                <p style="color: var(--text-muted);">
+                    El archivo debe tener una columna <strong>nombre</strong> (obligatoria) y opcionalmente:
+                    categoria, sku, precio, stock, stock_minimo, stock_maximo, proveedor_nombre, proveedor_contacto.
+                </p>
+
+                @if (!string.IsNullOrEmpty(_error))
+                {
+                    <div class="alert alert-error">@_error</div>
+                }
+
+                @if (_subiendo)
+                {
+                    <div class="loading-inline"><span class="spinner"></span> Importando @_nombreArchivoSeleccionado…</div>
+                }
+                else
+                {
+                    <button class="btn btn-primary" @onclick="ElegirArchivoAsync">
+                        <Icon Name="file-text" CssClass="" /> Elegir archivo CSV
+                    </button>
+                }
+
+                <div class="modal-footer">
+                    <button class="btn btn-ghost" @onclick="Cerrar" disabled="@_subiendo">Cancelar</button>
+                </div>
+            }
+            else
+            {
+                <div class="alert @(_resultado.Creados > 0 ? "alert-success" : "alert-info")">
+                    Se crearon <strong>@_resultado.Creados</strong> de @_resultado.TotalFilas fila(s).
+                </div>
+
+                @if (_resultado.Omitidos.Count > 0)
+                {
+                    <h3>Filas omitidas</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr><th>Fila</th><th>Motivo</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var o in _resultado.Omitidos)
+                                {
+                                    <tr><td>@o.Fila</td><td>@o.Motivo</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+
+                <div class="modal-footer">
+                    <button class="btn btn-primary" @onclick="CerrarYActualizar">Listo</button>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Show { get; set; }
+    [Parameter] public EventCallback OnImportado { get; set; }
+    [Parameter] public EventCallback OnCancelar { get; set; }
+
+    private bool _subiendo;
+    private string? _error;
+    private string _nombreArchivoSeleccionado = string.Empty;
+    private ImportacionResultado? _resultado;
+
+    protected override void OnParametersSet()
+    {
+        if (Show && _resultado is null && !_subiendo)
+        {
+            // Nada que reiniciar acá: el estado se limpia en Cerrar()/CerrarYActualizar().
+        }
+    }
+
+    private async Task ElegirArchivoAsync()
+    {
+        _error = null;
+        try
+        {
+            var opciones = new PickOptions { PickerTitle = "Elegí el archivo CSV de productos" };
+            var archivo = await FilePicker.Default.PickAsync(opciones);
+            if (archivo is null) return; // el usuario canceló el selector
+
+            if (!archivo.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+            {
+                _error = "El archivo tiene que ser un .csv";
+                return;
+            }
+
+            _nombreArchivoSeleccionado = archivo.FileName;
+            _subiendo = true;
+            using var stream = await archivo.OpenReadAsync();
+            _resultado = await ProductoService.ImportarCsvAsync(stream, archivo.FileName);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            _error = $"No se pudo leer el archivo: {ex.Message}";
+        }
+        finally
+        {
+            _subiendo = false;
+        }
+    }
+
+    private async Task Cerrar()
+    {
+        _error = null;
+        _resultado = null;
+        await OnCancelar.InvokeAsync();
+    }
+
+    private async Task CerrarYActualizar()
+    {
+        _resultado = null;
+        await OnImportado.InvokeAsync();
+    }
+
+    private async Task OnKeyDown(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && !_subiendo)
+        {
+            await Cerrar();
+        }
+    }
+}

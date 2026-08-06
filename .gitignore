@@ -142,5 +142,21 @@ Desktop.ini
 *.user
 *.cache
 
+<<<<<<< HEAD
 # Proyecto cliente C# (todavia no subir nada)
 client/
+=======
+# ================================
+# Cliente .NET MAUI (client/)
+# ================================
+client/bin/
+client/obj/
+**/bin/
+**/obj/
+*.user
+*.userosscache
+*.sln.docstates
+# Certificados de firma de paquetes locales (no versionar)
+*.pfx
+*.snk
+>>>>>>> feature/interfaz-y-reconstruccion

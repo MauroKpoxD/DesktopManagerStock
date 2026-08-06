@@ -1,0 +1,12 @@
+"""
+Test del endpoint de healthcheck real (antes el healthcheck de Docker
+apuntaba a la ruta de bienvenida '/api/v1/', que no verifica la base de
+datos).
+"""
+
+def test_health_check(client):
+    response = client.get("/api/v1/health")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["database"] == "ok"

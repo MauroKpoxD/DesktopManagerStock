@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:local="clr-namespace:DesktopManagerStock.Client"
+       x:Class="DesktopManagerStock.Client.AppShell"
+       Shell.FlyoutBehavior="Disabled"
+       Title="DesktopManagerStock">
+
+    <!--
+        Toda la navegación real ocurre DENTRO del BlazorWebView (ver Components/Routes.razor).
+        El Shell de MAUI solo aloja una única página (MainPage) a pantalla completa.
+    -->
+    <ShellContent
+        Title="DesktopManagerStock"
+        ContentTemplate="{DataTemplate local:MainPage}"
+        Route="MainPage" />
+
+</Shell>

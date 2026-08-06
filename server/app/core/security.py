@@ -26,6 +26,16 @@ def authenticate_user(db: Session, username: str, password: str):
     usuario = db.query(UsuarioDB).filter(UsuarioDB.username == username).first()
     if not usuario or not verify_password(password, usuario.hashed_password):
         return False
+<<<<<<< HEAD
+=======
+    if not usuario.activo:
+        # Antes esto no se validaba aquí: una cuenta desactivada por un admin
+        # podía igual hacer login y recibir un access_token + refresh_token
+        # válidos, y solo fallaba en la primera llamada a un endpoint
+        # protegido (get_current_active_user). Es mejor rechazarlo ya en el
+        # login: evita emitir tokens innecesarios y da un mensaje más claro.
+        return False
+>>>>>>> feature/interfaz-y-reconstruccion
     return usuario
 
 def create_access_token(data: dict, expires_delta: timedelta = None):

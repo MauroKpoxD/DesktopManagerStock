@@ -1,0 +1,498 @@
+@inject ProductoService ProductoService
+@inject AppState AppState
+@inject ToastService ToastService
+@inject NavigationState NavState
+
+<div class="page-header">
+    <h1>Productos</h1>
+    <div class="actions">
+        <input type="search" placeholder="Buscar por nombre…" @bind="_busqueda" @bind:event="oninput" @bind:after="ResetearPagina" style="width: 200px;" />
+        <select @bind="_categoriaFiltro" @bind:after="CargarConReseteoAsync" style="width: 160px;">
+            <option value="">Todas las categorías</option>
+            @foreach (var c in _categoriasDisponibles)
+            {
+                <option value="@c">@c</option>
+            }
+        </select>
+        <label style="display:flex; align-items:center; gap:.4rem; color: var(--text-muted); font-size:.85rem;">
+            <input type="checkbox" @bind="_incluirInactivos" @bind:after="CargarConReseteoAsync" />
+            Mostrar desactivados
+        </label>
+        @if (AppState.PuedeEditar)
+        {
+            <button class="btn btn-primary" @onclick="AbrirCrear"><Icon Name="plus" CssClass="" />Nuevo producto</button>
+        }
+        <button class="btn btn-ghost" @onclick="ExportarCsvAsync"><Icon Name="file-text" CssClass="" />Exportar CSV</button>
+        @if (AppState.PuedeEditar)
+        {
+            <button class="btn btn-ghost" @onclick="() => _mostrarImportar = true">Importar CSV</button>
+        }
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-error">@_error</div>
+}
+
+@if (_seleccionados.Count > 0)
+{
+    <div class="card bulk-bar">
+        <span><strong>@_seleccionados.Count</strong> seleccionado(s)</span>
+        <select @bind="_categoriaBulk" style="width:160px;">
+            <option value="">Cambiar categoría a…</option>
+            @foreach (var c in _categoriasDisponibles)
+            {
+                <option value="@c">@c</option>
+            }
+        </select>
+        <button class="btn btn-sm btn-ghost" @onclick="AplicarCategoriaEnLoteAsync" disabled="@(string.IsNullOrEmpty(_categoriaBulk) || _procesandoLote)">Aplicar</button>
+        @if (AppState.EsAdmin)
+        {
+            <button class="btn btn-sm btn-danger" @onclick="() => _mostrarConfirmBajaLote = true" disabled="@_procesandoLote">Desactivar seleccionados</button>
+        }
+        <button class="btn btn-sm btn-ghost" @onclick="() => _seleccionados.Clear()" disabled="@_procesandoLote">Cancelar selección</button>
+    </div>
+}
+
+@if (_cargando)
+{
+    <TableSkeleton Filas="6" Columnas="7" />
+}
+else if (ProductosFiltrados.Count == 0)
+{
+    <div class="table-wrap">
+        <div class="empty-state">
+            <div class="empty-state-icon"><Icon Name="box" CssClass="" /></div>
+            <div class="empty-state-title">
+                @(string.IsNullOrWhiteSpace(_busqueda) ? "No hay productos para mostrar." : $"Ningún producto coincide con \"{_busqueda}\".")
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:32px;"><input type="checkbox" checked="@TodosSeleccionados" @onchange="AlternarSeleccionarTodos" /></th>
+                    <th class="sortable" @onclick='() => Ordenar("nombre")'>Nombre @Flecha("nombre")</th>
+                    <th>Categoría</th>
+                    <th class="sortable" @onclick='() => Ordenar("precio")'>Precio @Flecha("precio")</th>
+                    <th class="sortable" @onclick='() => Ordenar("stock")'>Stock @Flecha("stock")</th>
+                    <th>Mín. / Máx.</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in ProductosPaginaActual)
+                {
+                    <tr class="@(!p.Activo ? "inactive-row" : "")">
+                        <td><input type="checkbox" checked="@_seleccionados.Contains(p.Id)" @onchange="() => AlternarSeleccion(p.Id)" /></td>
+                        <td>@p.Nombre</td>
+                        <td>@(string.IsNullOrEmpty(p.Categoria) ? "—" : p.Categoria)</td>
+                        <td>@p.Precio.ToString("C2")</td>
+                        <td>@p.Stock</td>
+                        <td>@p.StockMinimo / @p.StockMaximo</td>
+                        <td>
+                            @switch (p.NivelStock)
+                            {
+                                case "inactive":
+                                    <span class="badge badge-inactive">Desactivado</span>
+                                    break;
+                                case "out":
+                                    <span class="badge badge-out">Sin stock</span>
+                                    break;
+                                case "low":
+                                    <span class="badge badge-low">Stock bajo</span>
+                                    break;
+                                default:
+                                    <span class="badge badge-ok">OK</span>
+                                    break;
+                            }
+                        </td>
+                        <td>
+                            <div class="table-actions">
+                                <button class="btn btn-sm btn-ghost" @onclick="() => NavState.IrAHistorialProducto(p.Id)">Ver historial</button>
+                                @if (p.Activo && AppState.PuedeEditar)
+                                {
+                                    <button class="btn btn-sm btn-ghost" @onclick="() => AbrirAjusteStock(p)">Ajustar stock</button>
+                                    <button class="btn btn-sm btn-ghost" @onclick="() => AbrirEditar(p)">Editar</button>
+                                }
+                                @if (AppState.EsAdmin)
+                                {
+                                    @if (p.Activo)
+                                    {
+                                        <button class="btn btn-sm btn-danger" @onclick="() => PedirConfirmacionBaja(p)">Desactivar</button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-success" @onclick="() => ReactivarAsync(p)">Reactivar</button>
+                                    }
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <PaginacionControl PaginaActual="_paginaActual" TamanioPagina="TamanioPagina" Total="ProductosFiltrados.Count"
+            OnCambiarPagina="p => _paginaActual = p" />
+    </div>
+}
+
+<ProductoFormDialog Show="_mostrarForm" ProductoExistente="_productoEditando" EsAdmin="AppState.EsAdmin"
+    OnGuardado="OnFormGuardadoAsync" OnCancelar="CerrarForm" />
+
+<StockAdjustDialog Show="_mostrarAjuste" Producto="_productoAjustando"
+    OnAplicado="OnAjusteAplicadoAsync" OnCancelar="CerrarAjuste" />
+
+<ConfirmDialog Show="_mostrarConfirmBaja" Title="Desactivar producto"
+    Message="@($"¿Seguro que querés desactivar '{_productoABaja?.Nombre}'? Se ocultará de los listados pero su historial de movimientos se conserva.")"
+    ConfirmText="Desactivar" Danger="true" Cargando="_procesandoBaja"
+    OnConfirm="ConfirmarBajaAsync" OnCancel="() => _mostrarConfirmBaja = false" />
+
+<ImportarCsvDialog Show="_mostrarImportar" OnImportado="OnImportadoAsync" OnCancelar="() => _mostrarImportar = false" />
+
+<ConfirmDialog Show="_mostrarConfirmBajaLote" Title="Desactivar productos seleccionados"
+    Message="@($"Se van a desactivar {_seleccionados.Count} producto(s). Se ocultarán de los listados pero su historial se conserva. ¿Continuar?")"
+    ConfirmText="Desactivar" Danger="true" Cargando="_procesandoLote"
+    OnConfirm="ConfirmarBajaEnLoteAsync" OnCancel="() => _mostrarConfirmBajaLote = false" />
+
+@code {
+    private List<Producto> _productos = new();
+    private int _total;
+    private bool _cargando = true;
+    private bool _incluirInactivos;
+    private string? _error;
+    private string _busqueda = string.Empty;
+    private string _categoriaFiltro = string.Empty;
+    private List<string> _categoriasDisponibles = new();
+    private string _ordenCampo = "nombre";
+    private bool _ordenAscendente = true;
+    private int _paginaActual = 1;
+    private const int TamanioPagina = 20;
+
+    private bool _mostrarForm;
+    private Producto? _productoEditando;
+    private bool _mostrarImportar;
+
+    private bool _mostrarAjuste;
+    private Producto? _productoAjustando;
+
+    private bool _mostrarConfirmBaja;
+    private Producto? _productoABaja;
+    private bool _procesandoBaja;
+
+    private HashSet<int> _seleccionados = new();
+    private string _categoriaBulk = string.Empty;
+    private bool _mostrarConfirmBajaLote;
+    private bool _procesandoLote;
+
+    private bool TodosSeleccionados => ProductosPaginaActual.Count > 0 && ProductosPaginaActual.All(p => _seleccionados.Contains(p.Id));
+
+    private List<Producto> ProductosFiltrados
+    {
+        get
+        {
+            IEnumerable<Producto> query = _productos;
+            if (!string.IsNullOrWhiteSpace(_busqueda))
+            {
+                query = query.Where(p => p.Nombre.Contains(_busqueda, StringComparison.OrdinalIgnoreCase));
+            }
+            query = _ordenCampo switch
+            {
+                "precio" => _ordenAscendente ? query.OrderBy(p => p.Precio) : query.OrderByDescending(p => p.Precio),
+                "stock" => _ordenAscendente ? query.OrderBy(p => p.Stock) : query.OrderByDescending(p => p.Stock),
+                _ => _ordenAscendente ? query.OrderBy(p => p.Nombre) : query.OrderByDescending(p => p.Nombre),
+            };
+            return query.ToList();
+        }
+    }
+
+    // Paginación en memoria sobre lo ya cargado/filtrado/ordenado (hasta 200
+    // productos por vez, ver CargarAsync). Si el catálogo llegara a crecer
+    // mucho más que eso, convendría pasar a paginación real contra el
+    // servidor (como en Movimientos.razor), a costa de perder el orden y la
+    // búsqueda instantánea sobre todo el conjunto.
+    private List<Producto> ProductosPaginaActual =>
+        ProductosFiltrados.Skip((_paginaActual - 1) * TamanioPagina).Take(TamanioPagina).ToList();
+
+    private void ResetearPagina() => _paginaActual = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Recuerda el último filtro de categoría usado, para no tener que
+        // volver a elegirlo cada vez que se entra a Productos.
+        _categoriaFiltro = Preferences.Default.Get(PrefCategoriaFiltro, string.Empty);
+        await CargarAsync();
+        try
+        {
+            _categoriasDisponibles = await ProductoService.ListarCategoriasAsync();
+        }
+        catch
+        {
+            // El filtro de categorías es un extra: si falla, la página
+            // sigue funcionando igual, solo sin ese desplegable poblado.
+        }
+    }
+
+    private const string PrefCategoriaFiltro = "productos_filtro_categoria";
+
+    private Task CargarConReseteoAsync()
+    {
+        _paginaActual = 1;
+        return CargarAsync();
+    }
+
+    private async Task CargarAsync()
+    {
+        Preferences.Default.Set(PrefCategoriaFiltro, _categoriaFiltro);
+        _cargando = true;
+        _error = null;
+        try
+        {
+            var pagina = await ProductoService.ListarAsync(0, 200, _incluirInactivos, string.IsNullOrEmpty(_categoriaFiltro) ? null : _categoriaFiltro);
+            _productos = pagina.Items;
+            _total = pagina.Total;
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _cargando = false;
+        }
+    }
+
+    private void Ordenar(string campo)
+    {
+        _paginaActual = 1;
+        if (_ordenCampo == campo)
+        {
+            _ordenAscendente = !_ordenAscendente;
+        }
+        else
+        {
+            _ordenCampo = campo;
+            _ordenAscendente = true;
+        }
+    }
+
+    private string Flecha(string campo) => _ordenCampo != campo ? "" : (_ordenAscendente ? "↑" : "↓");
+
+    private void AbrirCrear()
+    {
+        _productoEditando = null;
+        _mostrarForm = true;
+    }
+
+    private void AbrirEditar(Producto p)
+    {
+        _productoEditando = p;
+        _mostrarForm = true;
+    }
+
+    private void CerrarForm() => _mostrarForm = false;
+
+    private async Task OnFormGuardadoAsync()
+    {
+        var creando = _productoEditando is null;
+        _mostrarForm = false;
+        await CargarAsync();
+        ToastService.Exito(creando ? "Producto creado correctamente." : "Producto actualizado correctamente.");
+    }
+
+    private async Task OnImportadoAsync()
+    {
+        _mostrarImportar = false;
+        await CargarAsync();
+        try
+        {
+            _categoriasDisponibles = await ProductoService.ListarCategoriasAsync();
+        }
+        catch
+        {
+            // No crítico: el filtro de categorías se actualiza en el próximo ciclo.
+        }
+    }
+
+    private void AbrirAjusteStock(Producto p)
+    {
+        _productoAjustando = p;
+        _mostrarAjuste = true;
+    }
+
+    private void CerrarAjuste() => _mostrarAjuste = false;
+
+    private async Task OnAjusteAplicadoAsync(AjusteStockResultado resultado)
+    {
+        _mostrarAjuste = false;
+        await CargarAsync();
+        var nombreProducto = _productos.FirstOrDefault(p => p.Id == resultado.ProductoId)?.Nombre ?? "Producto";
+        var descripcion = resultado.EsEntrada
+            ? $"Entrada de {resultado.Cantidad} en '{nombreProducto}'."
+            : $"Salida de {resultado.Cantidad} en '{nombreProducto}'.";
+        ToastService.ConAccion(descripcion, "Deshacer", () => DeshacerAjusteAsync(resultado));
+    }
+
+    private async Task DeshacerAjusteAsync(AjusteStockResultado resultado)
+    {
+        try
+        {
+            // El "deshacer" es literalmente el movimiento inverso: si fue una
+            // entrada de 5, se aplica una salida de 5 (y viceversa). Queda
+            // registrado como un movimiento más en el historial (no se borra
+            // nada), así que la auditoría sigue siendo completa.
+            await ProductoService.AjustarStockAsync(resultado.ProductoId, resultado.Cantidad, esEntrada: !resultado.EsEntrada);
+            await CargarAsync();
+            ToastService.Info("Ajuste de stock deshecho.");
+        }
+        catch (ApiException ex)
+        {
+            ToastService.Error($"No se pudo deshacer: {ex.Message}");
+        }
+    }
+
+    private void PedirConfirmacionBaja(Producto p)
+    {
+        _productoABaja = p;
+        _mostrarConfirmBaja = true;
+    }
+
+    private async Task ConfirmarBajaAsync()
+    {
+        if (_productoABaja is null) return;
+        _procesandoBaja = true;
+        try
+        {
+            await ProductoService.EliminarAsync(_productoABaja.Id);
+            _mostrarConfirmBaja = false;
+            var nombre = _productoABaja.Nombre;
+            await CargarAsync();
+            ToastService.Info($"'{nombre}' fue desactivado.");
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+            _mostrarConfirmBaja = false;
+        }
+        finally
+        {
+            _procesandoBaja = false;
+        }
+    }
+
+    private async Task ReactivarAsync(Producto p)
+    {
+        try
+        {
+            await ProductoService.ReactivarAsync(p.Id);
+            await CargarAsync();
+            ToastService.Exito($"'{p.Nombre}' fue reactivado.");
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task ExportarCsvAsync()
+    {
+        var filas = new List<string> { "Nombre,Categoria,SKU,Precio,Stock,StockMinimo,StockMaximo,Proveedor,Estado" };
+        foreach (var p in ProductosFiltrados)
+        {
+            filas.Add(string.Join(",", new[]
+            {
+                CsvHelper.Escapar(p.Nombre),
+                CsvHelper.Escapar(p.Categoria),
+                CsvHelper.Escapar(p.Sku),
+                CsvHelper.Escapar(p.Precio),
+                CsvHelper.Escapar(p.Stock),
+                CsvHelper.Escapar(p.StockMinimo),
+                CsvHelper.Escapar(p.StockMaximo),
+                CsvHelper.Escapar(p.ProveedorNombre),
+                CsvHelper.Escapar(p.Activo ? "Activo" : "Desactivado"),
+            }));
+        }
+
+        try
+        {
+            await CsvHelper.GuardarYAbrirAsync("productos", string.Join("\n", filas));
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error($"No se pudo exportar: {ex.Message}");
+        }
+    }
+
+    private void AlternarSeleccion(int productoId)
+    {
+        if (!_seleccionados.Add(productoId))
+        {
+            _seleccionados.Remove(productoId);
+        }
+    }
+
+    private void AlternarSeleccionarTodos(ChangeEventArgs e)
+    {
+        var marcar = e.Value is bool b && b;
+        foreach (var p in ProductosPaginaActual)
+        {
+            if (marcar) _seleccionados.Add(p.Id);
+            else _seleccionados.Remove(p.Id);
+        }
+    }
+
+    private async Task AplicarCategoriaEnLoteAsync()
+    {
+        if (string.IsNullOrEmpty(_categoriaBulk) || _seleccionados.Count == 0) return;
+        _procesandoLote = true;
+        var exitosos = 0;
+        foreach (var id in _seleccionados.ToList())
+        {
+            try
+            {
+                await ProductoService.ActualizarAsync(id, new ProductoUpdateRequest { Categoria = _categoriaBulk });
+                exitosos++;
+            }
+            catch (ApiException)
+            {
+                // Si un producto puntual falla (por ejemplo, otro usuario lo
+                // desactivó justo en el medio), se sigue con el resto en vez
+                // de abortar todo el lote.
+            }
+        }
+        _procesandoLote = false;
+        _seleccionados.Clear();
+        _categoriaBulk = string.Empty;
+        await CargarAsync();
+        ToastService.Exito($"Categoría actualizada en {exitosos} producto(s).");
+    }
+
+    private async Task ConfirmarBajaEnLoteAsync()
+    {
+        _procesandoLote = true;
+        var exitosos = 0;
+        foreach (var id in _seleccionados.ToList())
+        {
+            try
+            {
+                await ProductoService.EliminarAsync(id);
+                exitosos++;
+            }
+            catch (ApiException)
+            {
+                // Idem: un fallo puntual (ej. ya estaba desactivado) no aborta el lote.
+            }
+        }
+        _procesandoLote = false;
+        _mostrarConfirmBajaLote = false;
+        _seleccionados.Clear();
+        await CargarAsync();
+        ToastService.Info($"{exitosos} producto(s) desactivado(s).");
+    }
+}

@@ -1,0 +1,219 @@
+@inject UsuarioService UsuarioService
+@inject AppState AppState
+@inject ToastService ToastService
+
+<div class="page-header">
+    <h1>Usuarios</h1>
+    <div class="actions">
+        <input type="search" placeholder="Buscar por usuario o email…" @bind="_busqueda" @bind:event="oninput" style="width: 220px;" />
+        <button class="btn btn-primary" @onclick="() => _mostrarForm = true"><Icon Name="plus" CssClass="" />Nuevo usuario</button>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-error">@_error</div>
+}
+
+@if (_cargando)
+{
+    <div class="loading-inline"><span class="spinner"></span> Cargando usuarios…</div>
+}
+else
+{
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Usuario</th>
+                    <th>Email</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in UsuariosVisibles)
+                {
+                    <tr class="@(!u.Activo ? "inactive-row" : "")">
+                        <td>@u.Username</td>
+                        <td>@u.Email</td>
+                        <td>
+                            @if (_editandoId == u.Id)
+                            {
+                                <select @bind="_rolEditado">
+                                    <option value="admin">admin</option>
+                                    <option value="editor">editor</option>
+                                    <option value="lector">lector</option>
+                                </select>
+                            }
+                            else
+                            {
+                                <span class="role-badge @u.Rol">@u.Rol</span>
+                            }
+                        </td>
+                        <td>
+                            @if (u.Activo)
+                            {
+                                <span class="badge badge-ok">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-inactive">Desactivado</span>
+                            }
+                        </td>
+                        <td class="table-actions">
+                            @if (_editandoId == u.Id)
+                            {
+                                <button class="btn btn-sm btn-primary" @onclick="() => GuardarRolAsync(u)">Guardar</button>
+                                <button class="btn btn-sm btn-ghost" @onclick="() => _editandoId = null">Cancelar</button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-ghost" @onclick="() => EmpezarEdicion(u)" disabled="@(u.Id == AppState.UsuarioActual?.Id)">Cambiar rol</button>
+                                <button class="btn btn-sm btn-ghost" @onclick="() => PedirConfirmacionReset(u)">Restablecer contraseña</button>
+                                @if (u.Activo)
+                                {
+                                    <button class="btn btn-sm btn-danger" @onclick="() => CambiarEstadoAsync(u, false)" disabled="@(u.Id == AppState.UsuarioActual?.Id)">Desactivar</button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-sm btn-success" @onclick="() => CambiarEstadoAsync(u, true)">Reactivar</button>
+                                }
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <div class="pagination">Mostrando @UsuariosVisibles.Count de @_total</div>
+    </div>
+}
+
+<UsuarioFormDialog Show="_mostrarForm" OnCreado="OnUsuarioCreadoAsync" OnCancelar="() => _mostrarForm = false" />
+
+<ConfirmDialog Show="_mostrarConfirmReset" Title="Restablecer contraseña"
+    Message="@($"Se va a generar una contraseña temporal para '{_usuarioAReset?.Username}' y se cerrarán sus sesiones activas. ¿Continuar?")"
+    ConfirmText="Restablecer" Danger="true" Cargando="_procesandoReset"
+    OnConfirm="ConfirmarResetAsync" OnCancel="() => _mostrarConfirmReset = false" />
+
+<PasswordTemporalDialog Show="_mostrarPasswordTemporal" Username="@(_usuarioAReset?.Username ?? "")" Password="_passwordTemporal"
+    OnCerrar="() => _mostrarPasswordTemporal = false" />
+
+@code {
+    private List<Usuario> _usuarios = new();
+    private int _total;
+    private bool _cargando = true;
+    private string? _error;
+    private int? _editandoId;
+    private string _rolEditado = "lector";
+    private string _busqueda = string.Empty;
+    private bool _mostrarForm;
+
+    private bool _mostrarConfirmReset;
+    private bool _mostrarPasswordTemporal;
+    private Usuario? _usuarioAReset;
+    private string _passwordTemporal = string.Empty;
+    private bool _procesandoReset;
+
+    private List<Usuario> UsuariosVisibles =>
+        string.IsNullOrWhiteSpace(_busqueda)
+            ? _usuarios
+            : _usuarios.Where(u =>
+                u.Username.Contains(_busqueda, StringComparison.OrdinalIgnoreCase) ||
+                u.Email.Contains(_busqueda, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    protected override Task OnInitializedAsync() => CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        _cargando = true;
+        _error = null;
+        try
+        {
+            var pagina = await UsuarioService.ListarAsync(0, 200);
+            _usuarios = pagina.Items;
+            _total = pagina.Total;
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _cargando = false;
+        }
+    }
+
+    private void EmpezarEdicion(Usuario u)
+    {
+        _editandoId = u.Id;
+        _rolEditado = u.Rol;
+    }
+
+    private async Task OnUsuarioCreadoAsync()
+    {
+        _mostrarForm = false;
+        await CargarAsync();
+        ToastService.Exito("Usuario creado correctamente.");
+    }
+
+    private async Task GuardarRolAsync(Usuario u)
+    {
+        _error = null;
+        try
+        {
+            await UsuarioService.ActualizarAsync(u.Id, new UsuarioUpdateRequest { Rol = _rolEditado });
+            _editandoId = null;
+            await CargarAsync();
+            ToastService.Exito($"Rol de '{u.Username}' actualizado a {_rolEditado}.");
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task CambiarEstadoAsync(Usuario u, bool activo)
+    {
+        _error = null;
+        try
+        {
+            await UsuarioService.ActualizarAsync(u.Id, new UsuarioUpdateRequest { Activo = activo });
+            await CargarAsync();
+            ToastService.Exito(activo ? $"'{u.Username}' fue reactivado." : $"'{u.Username}' fue desactivado.");
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private void PedirConfirmacionReset(Usuario u)
+    {
+        _usuarioAReset = u;
+        _mostrarConfirmReset = true;
+    }
+
+    private async Task ConfirmarResetAsync()
+    {
+        if (_usuarioAReset is null) return;
+        _procesandoReset = true;
+        try
+        {
+            var resultado = await UsuarioService.ResetearPasswordAsync(_usuarioAReset.Id);
+            _passwordTemporal = resultado.PasswordTemporal;
+            _mostrarConfirmReset = false;
+            _mostrarPasswordTemporal = true;
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+            _mostrarConfirmReset = false;
+        }
+        finally
+        {
+            _procesandoReset = false;
+        }
+    }
+}

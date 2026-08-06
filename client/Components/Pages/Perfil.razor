@@ -1,0 +1,172 @@
+@inject PerfilService PerfilService
+@inject AppState AppState
+@inject ApiSettings ApiSettings
+@inject ToastService ToastService
+@inject ThemeService ThemeService
+
+<div class="page-header">
+    <h1>Mi perfil</h1>
+</div>
+
+<div class="card">
+    <h3>Datos de la cuenta</h3>
+    @if (!string.IsNullOrEmpty(_errorEmail))
+    {
+        <div class="alert alert-error">@_errorEmail</div>
+    }
+    @if (!string.IsNullOrEmpty(_mensajeEmail))
+    {
+        <div class="alert alert-success">@_mensajeEmail</div>
+    }
+    <div class="form-grid">
+        <div class="field">
+            <label>Usuario</label>
+            <input type="text" value="@AppState.UsuarioActual?.Username" disabled />
+        </div>
+        <div class="field">
+            <label>Rol</label>
+            <input type="text" value="@AppState.UsuarioActual?.Rol" disabled />
+        </div>
+        <div class="field">
+            <label>Email</label>
+            <input type="email" @bind="_email" disabled="@_guardandoEmail" />
+        </div>
+    </div>
+    <button class="btn btn-primary" @onclick="GuardarEmailAsync" disabled="@_guardandoEmail">
+        @(_guardandoEmail ? "Guardando…" : "Guardar email")
+    </button>
+</div>
+
+<div class="card">
+    <h3>Cambiar contraseña</h3>
+    @if (!string.IsNullOrEmpty(_errorPassword))
+    {
+        <div class="alert alert-error">@_errorPassword</div>
+    }
+    @if (!string.IsNullOrEmpty(_mensajePassword))
+    {
+        <div class="alert alert-success">@_mensajePassword</div>
+    }
+    <div class="form-grid">
+        <div class="field">
+            <label>Contraseña actual</label>
+            <input type="password" @bind="_passwordActual" disabled="@_guardandoPassword" />
+        </div>
+        <div class="field">
+            <label>Contraseña nueva</label>
+            <input type="password" @bind="_passwordNueva" disabled="@_guardandoPassword" />
+        </div>
+    </div>
+    <p style="color: var(--text-muted); font-size: .82rem;">
+        Debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.
+    </p>
+    <button class="btn btn-primary" @onclick="CambiarPasswordAsync" disabled="@_guardandoPassword">
+        @(_guardandoPassword ? "Cambiando…" : "Cambiar contraseña")
+    </button>
+</div>
+
+<div class="card">
+    <h3>Apariencia</h3>
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+        <div>
+            <div style="font-weight:600;">Tema @(ThemeService.EsClaro ? "claro" : "oscuro")</div>
+            <div style="color: var(--text-muted); font-size:.82rem;">Se aplica a toda la app (el login queda siempre con el tema oscuro de marca).</div>
+        </div>
+        <button class="btn btn-ghost" @onclick="ThemeService.Alternar">
+            <Icon Name="@(ThemeService.EsClaro ? "moon" : "sun")" CssClass="" />
+            Cambiar a @(ThemeService.EsClaro ? "oscuro" : "claro")
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Conexión con la API</h3>
+    <div class="field" style="max-width: 420px;">
+        <label>URL base</label>
+        <input type="text" @bind="_apiUrl" placeholder="http://localhost:8000/api/v1" />
+    </div>
+    <button class="btn btn-ghost" @onclick="GuardarApiUrl">Guardar URL</button>
+    @if (_apiUrlGuardada)
+    {
+        <div class="alert alert-info" style="margin-top:1rem;">
+            URL guardada. Cerrá y volvé a abrir la app para que tome efecto (la conexión ya está establecida para esta sesión).
+        </div>
+    }
+</div>
+
+@code {
+    private string _email = string.Empty;
+    private bool _guardandoEmail;
+    private string? _errorEmail;
+    private string? _mensajeEmail;
+
+    private string _passwordActual = string.Empty;
+    private string _passwordNueva = string.Empty;
+    private bool _guardandoPassword;
+    private string? _errorPassword;
+    private string? _mensajePassword;
+
+    private string _apiUrl = string.Empty;
+    private bool _apiUrlGuardada;
+
+    protected override void OnInitialized()
+    {
+        _email = AppState.UsuarioActual?.Email ?? string.Empty;
+        _apiUrl = ApiSettings.BaseUrl;
+    }
+
+    private async Task GuardarEmailAsync()
+    {
+        _errorEmail = null;
+        _mensajeEmail = null;
+        _guardandoEmail = true;
+        try
+        {
+            await PerfilService.ActualizarEmailAsync(_email);
+            _mensajeEmail = "Email actualizado.";
+            ToastService.Exito("Email actualizado correctamente.");
+        }
+        catch (ApiException ex)
+        {
+            _errorEmail = ex.Message;
+        }
+        finally
+        {
+            _guardandoEmail = false;
+        }
+    }
+
+    private async Task CambiarPasswordAsync()
+    {
+        _errorPassword = null;
+        _mensajePassword = null;
+        if (string.IsNullOrEmpty(_passwordActual) || string.IsNullOrEmpty(_passwordNueva))
+        {
+            _errorPassword = "Completá ambos campos.";
+            return;
+        }
+
+        _guardandoPassword = true;
+        try
+        {
+            await PerfilService.CambiarPasswordAsync(_passwordActual, _passwordNueva);
+            _mensajePassword = "Contraseña actualizada. Vas a tener que volver a iniciar sesión en tus otros dispositivos.";
+            _passwordActual = string.Empty;
+            _passwordNueva = string.Empty;
+        }
+        catch (ApiException ex)
+        {
+            _errorPassword = ex.Message;
+        }
+        finally
+        {
+            _guardandoPassword = false;
+        }
+    }
+
+    private void GuardarApiUrl()
+    {
+        ApiSettings.BaseUrl = _apiUrl;
+        _apiUrlGuardada = true;
+    }
+}

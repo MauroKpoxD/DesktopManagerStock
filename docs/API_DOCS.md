@@ -131,7 +131,15 @@ Authorization: Bearer <access_token>
 
 #### 5.1 Listar productos (paginado)
 
+<<<<<<< HEAD
 **GET** `/productos?skip=0&limit=100`
+=======
+**GET** `/productos?skip=0&limit=100&incluir_inactivos=false&categoria=Almacén`
+
+- `incluir_inactivos` (opcional, default `false`): si es `true`, incluye también los productos desactivados (ver 5.5).
+- `categoria` (opcional): filtra por categoría exacta.
+- La respuesta incluye el header `X-Total-Count` con el total de productos que cumplen el filtro (útil para paginar en el cliente sin traer todo).
+>>>>>>> feature/interfaz-y-reconstruccion
 
 **Respuesta:** Lista de objetos `Producto`:
 
@@ -140,14 +148,33 @@ Authorization: Bearer <access_token>
   {
     "id": 1,
     "nombre": "Laptop",
+<<<<<<< HEAD
     "precio": 1500.50,
     "stock": 10,
     "stock_minimo": 5,
     "stock_maximo": 50
+=======
+    "categoria": "Electrónica",
+    "sku": "LAP-001",
+    "proveedor_nombre": "Distribuidora XYZ",
+    "proveedor_contacto": "011-4444-5555",
+    "precio": 1500.50,
+    "stock": 10,
+    "stock_minimo": 5,
+    "stock_maximo": 50,
+    "activo": true
+>>>>>>> feature/interfaz-y-reconstruccion
   }
 ]
 ```
 
+<<<<<<< HEAD
+=======
+`categoria`, `sku`, `proveedor_nombre` y `proveedor_contacto` son todos campos de texto libre y opcionales (pueden ser `null`).
+
+**GET** `/productos/categorias` devuelve la lista de categorías distintas ya usadas por productos activos (`["Almacén", "Electrónica", ...]`), útil para poblar un filtro en el cliente.
+
+>>>>>>> feature/interfaz-y-reconstruccion
 #### 5.2 Obtener producto por ID
 
 **GET** `/productos/{id}`
@@ -183,12 +210,42 @@ Authorization: Bearer <access_token>
 }
 ```
 
+<<<<<<< HEAD
 **Nota:** El campo `stock` no se puede modificar directamente; se debe usar el endpoint de ajuste de stock.
+=======
+**Nota:** El campo `stock` no se puede modificar directamente; se debe usar el endpoint de ajuste de stock. El campo `activo` solo puede modificarlo un usuario con rol `admin` (un `editor` recibe 400 si lo incluye).
+>>>>>>> feature/interfaz-y-reconstruccion
 
 #### 5.5 Eliminar producto (solo admin)
 
 **DELETE** `/productos/{id}` (sin contenido, 204)
 
+<<<<<<< HEAD
+=======
+Es un **soft delete**: el producto se marca como `activo=false` y deja de aparecer en los listados por defecto, pero **su historial de movimientos se conserva** para auditoría y reportes. Un producto desactivado no admite nuevos ajustes de stock (400 si se intenta). El nombre del producto queda reservado (no se puede crear otro con el mismo nombre) hasta que se reactive o se le cambie el nombre.
+
+#### 5.5b Reactivar producto (solo admin)
+
+**PATCH** `/productos/{id}/reactivar`
+
+Vuelve a marcar como `activo=true` un producto previamente eliminado (soft delete).
+
+#### 5.5c Importar productos desde CSV (admin o editor)
+
+**POST** `/productos/importar-csv` (multipart/form-data, campo `archivo`)
+
+Columnas reconocidas (solo `nombre` es obligatoria): `nombre, categoria, sku, precio, stock, stock_minimo, stock_maximo, proveedor_nombre, proveedor_contacto`. Filas con errores (nombre duplicado, datos inválidos, sin nombre) se omiten individualmente sin abortar el resto de la importación.
+
+```json
+{
+  "total_filas": 3,
+  "creados": 2,
+  "productos_creados": ["Teclado", "Mouse"],
+  "omitidos": [{ "fila": 3, "motivo": "Ya existe un producto con el nombre 'Teclado'" }]
+}
+```
+
+>>>>>>> feature/interfaz-y-reconstruccion
 #### 5.6 Ajustar stock (requiere admin o editor)
 
 **PATCH** `/productos/{id}/stock?cantidad=5&tipo=entrada`  
@@ -526,10 +583,93 @@ El contenedor `api` debe aparecer como `healthy`.
 
 ---
 
+<<<<<<< HEAD
+=======
+## 👤 Perfil propio
+
+#### 8.1 Ver mi perfil
+
+**GET** `/auth/me`
+
+#### 8.2 Actualizar mi email
+
+**PUT** `/auth/me`
+```json
+{ "email": "nuevo@example.com" }
+```
+No permite cambiar el propio rol (eso solo lo puede hacer un admin, ver más abajo).
+
+#### 8.3 Cambiar mi contraseña
+
+**POST** `/auth/me/password`
+```json
+{ "password_actual": "actual123!", "password_nueva": "NuevaClave123!" }
+```
+Al cambiar la contraseña se revocan todos los refresh tokens existentes (se cierra sesión en otros dispositivos).
+
+---
+
+## 🧑‍⚖️ Administración de usuarios (solo admin)
+
+#### 9.1 Listar usuarios
+
+**GET** `/usuarios?skip=0&limit=100` — incluye header `X-Total-Count`.
+
+#### 9.2 Crear un usuario directamente
+
+**POST** `/usuarios`
+```json
+{ "username": "jperez", "email": "jperez@example.com", "password": "Clave123!", "rol": "editor" }
+```
+A diferencia de `POST /auth/register` (público, siempre crea `rol: "lector"`), este endpoint es solo para admins y permite elegir el rol del usuario nuevo (admin/editor/lector) directamente.
+
+#### 9.3 Ver un usuario
+
+**GET** `/usuarios/{id}`
+
+#### 9.4 Actualizar rol / estado / email de un usuario
+
+**PUT** `/usuarios/{id}`
+```json
+{ "rol": "editor", "activo": true, "email": "otro@example.com" }
+```
+Todos los campos son opcionales. Un admin no puede quitarse a sí mismo el rol de admin ni desactivar su propia cuenta (evita quedarse sin acceso). Al desactivar un usuario se revocan sus refresh tokens y ya no puede iniciar sesión.
+
+#### 9.5 Restablecer contraseña de un usuario
+
+**POST** `/usuarios/{id}/resetear-password`
+
+Genera una contraseña temporal para un usuario que perdió acceso a la suya (no hay recuperación por email todavía). La respuesta incluye la contraseña en texto plano **una sola vez**:
+```json
+{ "usuario": { "id": 3, "username": "jperez", ... }, "password_temporal": "Xy7pQr2mK!A1" }
+```
+Se recomienda que la persona la cambie apenas entre, con `POST /auth/me/password`.
+
+---
+
+## ❤️ Healthcheck
+
+**GET** `/health` (sin autenticación)
+
+Verifica que la API responde **y** que puede conectarse a la base de datos:
+
+```json
+{ "status": "ok", "database": "ok", "version": "1.0.0" }
+```
+
+Responde `503` con `"status": "degraded"` si la base de datos no responde. Es el endpoint que usa el `healthcheck` de Docker (antes apuntaba a `/` y no detectaba caídas de la base de datos).
+
+---
+
+>>>>>>> feature/interfaz-y-reconstruccion
 ## 📄 Licencia
 
 Este proyecto está bajo licencia **Apache 2.0**. Consulta el archivo LICENSE para más detalles.
 
 ---
 
+<<<<<<< HEAD
 **Última actualización:** 2026-07-09
+=======
+**Última actualización:** 2026-07-13
+>>>>>>> feature/interfaz-y-reconstruccion

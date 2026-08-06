@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <!--
+      Multi-plataforma real: un mismo código en C#/Razor compila para las
+      4 plataformas estándar de .NET MAUI (esto es lo mismo que genera
+      `dotnet new maui-blazor` por defecto). Para compilar TODAS a la vez
+      necesitás tener instalados los workloads y SDKs de cada una
+      (Android SDK, y para iOS específicamente un Mac con Xcode). Si solo
+      te interesa una plataforma en particular, compilá/corré indicando
+      -f explícitamente, por ejemplo:
+        dotnet build -f net10.0-windows10.0.19041.0
+        dotnet build -f net10.0-maccatalyst
+      así no hace falta tener todos los workloads instalados para poder
+      trabajar. Ver client/README.md para más detalle.
+    -->
+    <TargetFrameworks>net10.0-android;net10.0-ios;net10.0-maccatalyst;net10.0-windows10.0.19041.0</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>DesktopManagerStock.Client</RootNamespace>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+
+    <!-- Metadata de la app -->
+    <ApplicationTitle>DesktopManagerStock</ApplicationTitle>
+    <ApplicationId>com.desktopmanagerstock.client</ApplicationId>
+    <ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+
+    <!-- Versiones mínimas de SO por plataforma -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+    <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">14.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">14.2</SupportedOSPlatformVersion>
+    <!-- API 24: mínimo recomendado por Microsoft para proyectos nuevos en .NET 10 (API 21 sigue funcionando pero ya no es el piso recomendado). -->
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
+
+    <!-- Entitlement de red para MacCatalyst (ver Platforms/MacCatalyst/Entitlements.plist) -->
+    <CodesignEntitlements Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">Platforms/MacCatalyst/Entitlements.plist</CodesignEntitlements>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Icono y splash screen: reemplazá estos SVG por tu propio arte
+         (por ejemplo, basado en assets/logo_simple.png del repo) cuando quieras. -->
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#1b2733" />
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#1b2733" BaseSize="256,256" />
+
+    <!-- Imágenes usadas en la UI (logo en el menú lateral, etc.) -->
+    <MauiImage Include="Resources\Images\*" />
+
+    <!-- Assets "en crudo" copiados tal cual al paquete final -->
+    <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.80" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="10.0.71" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
+  </ItemGroup>
+
+</Project>

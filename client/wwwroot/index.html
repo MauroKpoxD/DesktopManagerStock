@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>DesktopManagerStock</title>
+    <base href="/" />
+    <!--
+        Poppins vía Google Fonts. Si el dispositivo no tiene internet en el
+        momento (la fuente no carga), el CSS cae de forma automática a la
+        pila de fuentes del sistema (ver --font en css/app.css), así que la
+        app nunca se queda sin tipografía.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+    <div id="app">
+        <!-- Se reemplaza por Components/Routes.razor cuando arranca el BlazorWebView -->
+        <div class="boot-loader">
+            <span>Cargando DesktopManagerStock…</span>
+        </div>
+    </div>
+
+    <div id="blazor-error-ui">
+        Ocurrió un error inesperado.
+        <a href="" class="reload">Recargar</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+    <script src="_framework/blazor.webview.js" autostart="false"></script>
+</body>
+</html>

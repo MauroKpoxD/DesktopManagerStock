@@ -87,3 +87,99 @@ def test_get_productos_stock_bajo_endpoint(client, auth_headers, db_session):
     response_umbral = client.get("/api/v1/productos/stock/bajo?umbral=3", headers=auth_headers)
     assert response_umbral.status_code == 200
     assert len(response_umbral.json()) == 1
+
+def test_crear_producto_con_categoria(client, auth_headers):
+    payload = {"nombre": "Yerba", "precio": 5, "stock": 10, "categoria": "Almacén"}
+    response = client.post("/api/v1/productos", json=payload, headers=auth_headers)
+    assert response.status_code == 201
+    assert response.json()["categoria"] == "Almacén"
+
+def test_filtrar_productos_por_categoria(client, auth_headers, db_session):
+    crear_producto(db_session, ProductoCreate(nombre="Fideos", precio=2, stock=5, categoria="Almacén"))
+    crear_producto(db_session, ProductoCreate(nombre="Detergente", precio=3, stock=5, categoria="Limpieza"))
+    response = client.get("/api/v1/productos?categoria=Almacén", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["nombre"] == "Fideos"
+
+def test_listar_categorias(client, auth_headers, db_session):
+    crear_producto(db_session, ProductoCreate(nombre="Lavandina", precio=2, stock=5, categoria="Limpieza"))
+    crear_producto(db_session, ProductoCreate(nombre="Arroz", precio=2, stock=5, categoria="Almacén"))
+    crear_producto(db_session, ProductoCreate(nombre="SinCategoria", precio=2, stock=5))
+    response = client.get("/api/v1/productos/categorias", headers=auth_headers)
+    assert response.status_code == 200
+    assert set(response.json()) == {"Limpieza", "Almacén"}
+
+def test_crear_producto_con_sku_y_proveedor(client, auth_headers):
+    payload = {
+        "nombre": "Mouse Inalambrico",
+        "precio": 15,
+        "stock": 8,
+        "sku": "MOU-001",
+        "proveedor_nombre": "Distribuidora XYZ",
+        "proveedor_contacto": "011-4444-5555",
+    }
+    response = client.post("/api/v1/productos", json=payload, headers=auth_headers)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["sku"] == "MOU-001"
+    assert data["proveedor_nombre"] == "Distribuidora XYZ"
+    assert data["proveedor_contacto"] == "011-4444-5555"
+
+def test_importar_csv_requiere_rol(client, lector_headers):
+    csv_contenido = "nombre,precio,stock\nTeclado,10,5\n"
+    response = client.post(
+        "/api/v1/productos/importar-csv",
+        files={"archivo": ("productos.csv", csv_contenido, "text/csv")},
+        headers=lector_headers,
+    )
+    assert response.status_code == 403
+
+def test_importar_csv_crea_productos(client, auth_headers):
+    csv_contenido = (
+        "nombre,categoria,precio,stock,stock_minimo,stock_maximo\n"
+        "Teclado,Electrónica,10,5,2,20\n"
+        "Mouse,Electrónica,8,3,1,15\n"
+    )
+    response = client.post(
+        "/api/v1/productos/importar-csv",
+        files={"archivo": ("productos.csv", csv_contenido, "text/csv")},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["creados"] == 2
+    assert data["total_filas"] == 2
+    assert set(data["productos_creados"]) == {"Teclado", "Mouse"}
+    assert data["omitidos"] == []
+
+    response = client.get("/api/v1/productos?categoria=Electrónica", headers=auth_headers)
+    assert len(response.json()) == 2
+
+def test_importar_csv_omite_filas_invalidas_sin_abortar(client, auth_headers, productos_demo):
+    nombre_existente = productos_demo[0].nombre
+    csv_contenido = (
+        f"nombre,precio,stock\n"
+        f"{nombre_existente},10,5\n"  # duplicado, se omite
+        f"ProductoValido,15,3\n"
+        f",20,1\n"  # sin nombre, se omite
+    )
+    response = client.post(
+        "/api/v1/productos/importar-csv",
+        files={"archivo": ("productos.csv", csv_contenido, "text/csv")},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["creados"] == 1
+    assert data["productos_creados"] == ["ProductoValido"]
+    assert len(data["omitidos"]) == 2
+
+def test_importar_csv_rechaza_archivo_no_csv(client, auth_headers):
+    response = client.post(
+        "/api/v1/productos/importar-csv",
+        files={"archivo": ("productos.txt", "nombre,precio,stock\nX,1,1\n", "text/plain")},
+        headers=auth_headers,
+    )
+    assert response.status_code == 400

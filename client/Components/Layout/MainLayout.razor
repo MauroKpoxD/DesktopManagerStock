@@ -1,0 +1,54 @@
+@using DesktopManagerStock.Client.Components.Pages
+@inject NavigationState NavState
+@inject ThemeService ThemeService
+@implements IDisposable
+
+<div class="app-shell @(ThemeService.EsClaro ? "theme-light" : "")">
+    <NavMenu />
+
+    <div class="main-content">
+        <div class="page-fade" @key="(NavState.SeccionActual, NavState.ProductoIdParametro)">
+            @switch (NavState.SeccionActual)
+            {
+                case Seccion.Dashboard:
+                    <Dashboard />
+                    break;
+                case Seccion.Productos:
+                    <Productos />
+                    break;
+                case Seccion.ProductoDetalle:
+                    <ProductoDetalle />
+                    break;
+                case Seccion.Movimientos:
+                    <Movimientos />
+                    break;
+                case Seccion.StockBajo:
+                    <StockBajo />
+                    break;
+                case Seccion.Reportes:
+                    <Reportes />
+                    break;
+                case Seccion.Usuarios:
+                    <Usuarios />
+                    break;
+                case Seccion.Perfil:
+                    <Perfil />
+                    break;
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        NavState.OnChange += StateHasChanged;
+        ThemeService.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        NavState.OnChange -= StateHasChanged;
+        ThemeService.OnChange -= StateHasChanged;
+    }
+}
