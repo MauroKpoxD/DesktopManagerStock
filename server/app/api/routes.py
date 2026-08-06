@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.core.security import get_current_active_user
 from app.core.roles import require_roles, Rol
 from app.models.usuario import UsuarioDB
+from app.core.exceptions import NotFoundError, ValidationError, ConflictError
 from app.services.producto_service import (
     listar_productos,
     contar_productos,
